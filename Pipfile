@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 chess = "*"
+mkdocs = "*"
+mkdocstrings = "*"
 
 [dev-packages]
 
