@@ -7,11 +7,10 @@
 pip freeze
 pipenv shell
 ```
-- install python packages
+- installing python packages is handled via pipenv
 
-## Python Packages
 ```
-pip install
+pipenv install [package name...]
 ```
 
 ## Git(hub) stuff
