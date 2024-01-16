@@ -15,3 +15,4 @@
 - Python (v2023.18.0, because the newer version has some weird bugs..)
 - better Comments
 - autoDocstring
+- Rainbow CSV
