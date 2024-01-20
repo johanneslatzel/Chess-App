@@ -269,8 +269,7 @@ class Puzzles(ChessboardAndLogModule):
         After calling this method the user can interact with the puzzle (and solve it).
 
         Args:
-            keep_puzzle (bool, optional): Defaults to False. if True, the current puzzle is kept (if possible). if False, a new puzzle is
-            chosen from the puzzles list.
+            keep_puzzle (bool, optional): Defaults to False. if True, the current puzzle is kept (if possible). if False, a new puzzle is chosen from the puzzles list.
         """
         if self.is_started:
             return
