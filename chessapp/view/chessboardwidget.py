@@ -3,19 +3,31 @@ from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPainter
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QWidget
 from chessapp.view.chessboard import ChessBoard
-from chessapp.view.piecemovement import PieceMovement
 from chess import Board
 from chessapp.view.evalbar import EvalBar
 from chessapp.model.node import Node
 import chessapp.model.move
 from chessapp.model.sourcetype import SourceType
 from chessapp.sound.chessboardsound import ChessboardSound
+import traceback
 
 s_size_scale = 100
 s_width_hint = 8 * s_size_scale
 s_height_hint = s_width_hint
 s_eval_bar_min_width = 10
 s_min_depth_best_move = 20
+
+
+class PieceMovement():
+    def __init__(self, source_square: str, destination_square: str):
+        self.source_square = source_square
+        self.destination_square = destination_square
+
+    def uci_format(self):
+        return self.source_square + self.destination_square
+
+    def __str__(self):
+        return self.uci_format()
 
 
 class ChessBoardWidget(QWidget):
@@ -75,15 +87,17 @@ class ChessBoardWidget(QWidget):
                 uci_text = previous_board.push_san(last_move.san).uci()
                 self.board.last_move_destination = uci_text[2:]
                 self.board.last_move_source = uci_text[0:2]
-            except Exception as e:
+            except:
                 print("error while trying to set SquareIcon associated with last move")
-                print(e)
+                print(traceback.format_exc())
             equivalent_move = previous_node.get_equivalent_move(last_move)
             if equivalent_move:
                 last_move = equivalent_move
             self.board.last_move_is_book = last_move.source == SourceType.BOOK
-            self.board.last_move_is_best_known = previous_node.get_best_move(
-            ).is_equivalent_to(last_move)
+            # can be None if no move is known
+            previous_node_best_move = previous_node.get_best_move()
+            self.board.last_move_is_best_known = previous_node_best_move and previous_node_best_move.is_equivalent_to(
+                last_move)
             if node:
                 self.board.node_depth = node.eval_depth
         self.update()
