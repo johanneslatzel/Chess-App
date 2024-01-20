@@ -9,10 +9,10 @@
 # possible authentication tokens of the user have to be saved locally. The user should always be able
 # to logout (deleting the tokens) and to login afterwards.
 
-from view.module import Module
+from view.module import ChessboardAndLogModule
 
 
-class GameDownloader(Module):
+class GameDownloader(ChessboardAndLogModule):
 
     def __init__(self):
         super().__init__()

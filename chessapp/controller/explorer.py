@@ -1,9 +1,9 @@
 from chessapp.model.chesstree import ChessTree, get_fen_from_board
-from chessapp.view.piecemovement import PieceMovement
+from chessapp.view.chessboardwidget import PieceMovement
 from chess import Board
 import chess
 import chessapp.model.move
-from chessapp.view.module import Module, create_method_action, MethodAction
+from chessapp.view.module import ChessboardAndLogModule, create_method_action, MethodAction
 from chessapp.controller.engine import Engine, MoveDescriptor
 import traceback
 from chessapp.model.node import Node
@@ -16,7 +16,7 @@ s_best_moves_eval_depth = 30
 s_best_moves_multipv = 3
 
 
-class Explorer(Module):
+class Explorer(ChessboardAndLogModule):
 
     def __init__(self, app, tree: ChessTree):
         super().__init__(app, "Explorer", [

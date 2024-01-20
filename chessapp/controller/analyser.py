@@ -2,7 +2,7 @@ from chessapp.model.chesstree import ChessTree
 from chessapp.controller.engine import Engine
 from chessapp.model.sourcetype import SourceType
 from chess import Board, WHITE
-from chessapp.view.module import Module, create_method_action
+from chessapp.view.module import ChessboardAndLogModule, create_method_action
 
 
 s_analyse_desired_depth = 20
@@ -21,7 +21,7 @@ s_source_to_depth_map = {
 }
 
 
-class Analyser(Module):
+class Analyser(ChessboardAndLogModule):
     def __init__(self, app, tree: ChessTree):
         super().__init__(app, "Analyser", [
             create_method_action(app, "Analyse", self.analyse),
