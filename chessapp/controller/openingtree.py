@@ -1,5 +1,5 @@
 from chessapp.model.chesstree import ChessTree
-from chessapp.view.module import Module, create_method_action
+from chessapp.view.module import LogModule, create_method_action
 from chessapp.controller.updater import import_pgn_from_folder_path
 from chessapp.model.sourcetype import SourceType
 from chessapp.util.paths import get_opening_tree_folder
@@ -14,7 +14,7 @@ s_black_opening_tree_folder_path: str = join(
     get_opening_tree_folder(), "black")
 
 
-class OpeningTree(Module):
+class OpeningTree(LogModule):
 
     def __init__(self, app):
         super().__init__(app, "OpeningTree", [
@@ -24,6 +24,7 @@ class OpeningTree(Module):
         self.black_opening_tree: ChessTree = ChessTree(
             s_black_opening_tree_folder_path)
         self.app = app
+        self.dispatch_threadpool(self.load)
 
     def load(self):
         self.log_message("loading opening tree...", 60000)
