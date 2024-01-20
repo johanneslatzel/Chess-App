@@ -43,18 +43,20 @@ class ChessTree:
     def load_moves(self, encoding: str):
         create_file_if_not_exist(self.moves_file_path())
         with open(self.moves_file_path(), "r", encoding=encoding) as f:
-            # fen; move; comment; SourceType; frequency
+            # fen; move; comment; SourceType; frequency;result fen
             reader = csv.reader(f, delimiter=';')
             for row in reader:
-                board = Board(fen=row[0])
-                board.push_san(row[1])
-                fen = get_fen_from_board(board)
-                move = Move(self, row[1], fen, row[2],
-                            SourceType.from_str(row[3]))
+                if len(row) >= 6:
+                    result_fen = row[5]
+                else:
+                    # recover result_fen from san
+                    board = Board(fen=row[0])
+                    board.push_san(row[1])
+                    result_fen = get_fen_from_board(board)
+                move = Move(self, row[1], result_fen, row[2],
+                            SourceType.from_str(row[3]), int(row[4]))
                 self.get(row[0]).add(move)
-                self.assure(fen)
-                if len(row) >= 5:
-                    move.frequency = int(row[4])
+                self.assure(result_fen)
 
     def load(self, encoding: str = STR_DEFAULT_ENCODING):
         self.load_position_evaluation(encoding)
@@ -65,7 +67,8 @@ class ChessTree:
             for fen in self.nodes:
                 for move in self.nodes[fen].moves:
                     file.write("\"" + fen + "\";\"" + move.san +
-                               "\";\"" + move.comment + "\";\"" + move.source.sformat() + "\";\"" + str(move.frequency) + "\"\n")
+                               "\";\"" + move.comment + "\";\"" + move.source.sformat() + "\";\"" +
+                               str(move.frequency) + "\";\"" + str(move.result) + "\"\n")
             file.flush()
             file.close()
         with open(self.position_evaluation_file_path(), "w", encoding=STR_DEFAULT_ENCODING) as file:
