@@ -1,6 +1,6 @@
-from chessapp.view.pieces import Queen, King, Pawn, Rook, Bishop, Knight, PiecePosition, PieceDimenson
+from chessapp.view.pieces import get_piece_from, ChessPiece
 from PyQt5.QtGui import QPainter, QColor
-from PyQt5.QtCore import QRect, QPoint
+from PyQt5.QtCore import QRect, QPoint, QSize
 from PyQt5.QtGui import QPainter, QPixmap
 from enum import Enum
 from chessapp.view.arrow import Arrow
@@ -52,28 +52,16 @@ class SquareIcon:
                          square_icon_type.sformat().lower() + ".png")
         self.icon = QPixmap(self.path)
 
-    def drawOn(self, qp: QPainter, pos: PiecePosition, dim: PieceDimenson):
+    def drawOn(self, qp: QPainter, pos: QPoint, dim: QSize):
         target_width = int(SQUARE_ICON_SQUARE_PERCENTAGE * dim.width)
         target_height = int(SQUARE_ICON_SQUARE_PERCENTAGE * dim.height)
-        qp.drawPixmap(pos.x + dim.width - target_width, pos.y, target_width, target_height,
+        qp.drawPixmap(pos.x() + dim.width - target_width, pos.y(), target_width, target_height,
                       self.icon, 0, 0, s_square_icon_source_width, s_square_icon_source_height)
 
 
 class ChessBoard:
     def __init__(self):
         self.icon_map = {}
-        self.white_queen = Queen("w")
-        self.white_king = King("w")
-        self.white_bishop = Bishop("w")
-        self.white_knight = Knight("w")
-        self.white_pawn = Pawn("w")
-        self.white_rook = Rook("w")
-        self.black_queen = Queen("b")
-        self.black_king = King("b")
-        self.black_bishop = Bishop("b")
-        self.black_knight = Knight("b")
-        self.black_pawn = Pawn("b")
-        self.black_rook = Rook("b")
         self.white_square_color = QColor(228, 238, 210, 255)
         self.black_square_color = QColor(118, 150, 86, 255)
         self.red_square_color = QColor(255, 0, 0, 255)
@@ -142,7 +130,7 @@ R N B Q K B N R"""
             row = 7 - row
             col = 7 - col
         self.active_piece_origin = self.coords_to_square(x, y, width, height)
-        self.active_piece = self.piece_from_letter(
+        self.active_piece = get_piece_from(
             self.ascii_board.split("\n")[row].split(" ")[col])
         self.active_piece_legal_move_destinations = []
         if self.legal_moves != None:
@@ -160,37 +148,6 @@ R N B Q K B N R"""
     def view_white(self):
         self.flip_board = False
 
-    def piece_from_letter(self, letter):
-        piece = None
-        match letter:
-            case "r":
-                piece = self.black_rook
-            case "R":
-                piece = self.white_rook
-            case "n":
-                piece = self.black_knight
-            case "N":
-                piece = self.white_knight
-            case "k":
-                piece = self.black_king
-            case "K":
-                piece = self.white_king
-            case "q":
-                piece = self.black_queen
-            case "Q":
-                piece = self.white_queen
-            case "b":
-                piece = self.black_bishop
-            case "B":
-                piece = self.white_bishop
-            case "p":
-                piece = self.black_pawn
-            case "P":
-                piece = self.white_pawn
-            case _:
-                piece = None
-        return piece
-
     def is_active_piece(self, row: int, col: int) -> bool:
         return self.active_piece and self.active_piece_origin and col == (ord(self.active_piece_origin[0]) - ord('a')) and row == (int(self.active_piece_origin[1]) - 1)
 
@@ -198,7 +155,7 @@ R N B Q K B N R"""
         return self.active_piece and len(self.active_piece_legal_move_destinations) > 0
 
     def drawOn(self, qp: QPainter, bound: QRect):
-        dim = PieceDimenson()
+        dim = QSize()
         dim.width = bound.width() // 8
         dim.height = bound.height() // 8
         self.draw_squares(qp, bound, dim)
@@ -208,7 +165,7 @@ R N B Q K B N R"""
         self.draw_square_icon_last_move(qp, bound, dim)
         self.draw_piece_movement(qp, bound, dim)
 
-    def draw_squares(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_squares(self, qp: QPainter, bound: QRect, dim: QSize):
         square_color = None
         for row in range(0, 8):
             for col in range(0, 8):
@@ -219,22 +176,22 @@ R N B Q K B N R"""
                     qp.fillRect(col * dim.width + bound.x(), (7 - row) * dim.height + bound.y(),
                                 dim.width, dim.height, square_color)
 
-    def draw_pieces(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_pieces(self, qp: QPainter, bound: QRect, dim: QSize):
         rows = self.ascii_board.split("\n")
         for i in range(0, 8):
             row = rows[i].split(" ")
             for j in range(0, 8):
-                piece = self.piece_from_letter(row[j])
+                piece: ChessPiece = get_piece_from(row[j])
                 i_value = i
                 j_value = j
                 if self.flip_board:
                     i_value = 7 - i
                     j_value = 7 - j
                 if piece and not (self.is_active_piece(7 - i, j) and self.should_draw_active_piece()):
-                    piece.drawOn(qp, PiecePosition(
+                    piece.drawOn(qp, QPoint(
                         dim.width * j_value + bound.x(), dim.height * i_value + bound.y()), dim)
 
-    def draw_last_move_arrow(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_last_move_arrow(self, qp: QPainter, bound: QRect, dim: QSize):
         if self.last_move_source and self.last_move_destination:
             sx, sy = self.square_to_coords(
                 self.last_move_source, bound.width(), bound.height())
@@ -248,7 +205,7 @@ R N B Q K B N R"""
             arrow.indentation = 0.4
             arrow.drawOn(qp, bound, dim)
 
-    def draw_best_move_arrow(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_best_move_arrow(self, qp: QPainter, bound: QRect, dim: QSize):
         if self.show_best_move and self.best_move and SquareIconType.is_best(self.best_move_cp_loss, True) and self.show_last_move_arrow:
             sx, sy = self.square_to_coords(
                 self.best_move[:2], bound.width(), bound.height())
@@ -258,14 +215,14 @@ R N B Q K B N R"""
             arrow.width = min(dim.width, dim.height) / 5
             arrow.drawOn(qp, bound, dim)
 
-    def draw_square_icon_last_move(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_square_icon_last_move(self, qp: QPainter, bound: QRect, dim: QSize):
         if self.last_move_destination and self.node_depth > 0 and self.show_last_move_icon:
             x, y = self.square_to_coords(
                 self.last_move_destination, bound.width(), bound.height())
             self.icon_map[SquareIconType.from_cp_loss(self.last_move_cp_loss, self.last_move_is_book, self.last_move_is_best_known)].drawOn(
-                qp, PiecePosition(bound.x() + x, bound.y() + y), dim)
+                qp, QPoint(bound.x() + x, bound.y() + y), dim)
 
-    def draw_piece_movement(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def draw_piece_movement(self, qp: QPainter, bound: QRect, dim: QSize):
         if self.should_draw_active_piece():
             if self.enable_piece_to_cursor:
                 # draw possible destinations
@@ -278,7 +235,7 @@ R N B Q K B N R"""
                     qp.drawEllipse(QPoint(x + bound.x() + dim.width // 2, y + bound.y() + dim.height // 2),
                                    dim.width // 5, dim.height // 5)
                 # draw piece itself
-                self.active_piece.drawOn(qp, PiecePosition(
+                self.active_piece.drawOn(qp, QPoint(
                     int(self.mouse_x - (dim.width / 2)), int(self.mouse_y - (dim.height / 2))), dim)
 
     def get_preferred_length(self, length: int) -> int:
