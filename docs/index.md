@@ -1,0 +1,1 @@
+This is the main documentation of "Chess App".
