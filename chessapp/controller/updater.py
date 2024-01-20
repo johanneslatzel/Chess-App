@@ -6,12 +6,12 @@ from chess import Board, IllegalMoveError
 from chess.pgn import read_game
 import io
 from chessapp.model.move import Move
-from chessapp.view.module import Module, create_method_action
+from chessapp.view.module import LogModule, create_method_action
 from os.path import join
 from chessapp.util.paths import get_openings_folder
 
 
-class Updater(Module):
+class Updater(LogModule):
     def __init__(self, app, tree: ChessTree):
         super().__init__(app, "Update", [create_method_action(
             app, "Update Openings", self.update_openings)])
@@ -21,7 +21,7 @@ class Updater(Module):
     def update_openings(self):
         self.log_message("updating...")
         for key in SourceType._member_map_:
-            path = join(get_openings_folder(), key)
+            path = join(get_openings_folder(), "sources", key)
             Path(path).mkdir(parents=True, exist_ok=True)
             import_pgn_from_folder_path(self.app, self.tree, SourceType.from_str(
                 key), path, self.about_to_close, False)

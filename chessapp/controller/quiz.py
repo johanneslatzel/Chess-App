@@ -2,12 +2,12 @@ import random
 from PyQt5.QtCore import QRunnable
 from chess import Board
 from chessapp.model.chesstree import get_fen_from_board, ChessTree
-from chessapp.view.piecemovement import PieceMovement
+from chessapp.view.chessboardwidget import PieceMovement
 import time
 import chess
 from chessapp.model.move import Move
 from chessapp.model.sourcetype import SourceType
-from chessapp.view.module import Module, create_method_action
+from chessapp.view.module import ChessboardAndLogModule, create_method_action
 from chessapp.controller.openingtree import OpeningTree
 from chessapp.controller.explorer import Explorer
 from chessapp.model.node import Node
@@ -17,7 +17,7 @@ s_starting_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
 s_quiz_start_at_fen = s_starting_position
 
 
-class Quiz(Module):
+class Quiz(ChessboardAndLogModule):
 
     def __init__(self, app, tree: ChessTree, opening_tree: OpeningTree, explorer: Explorer):
         super().__init__(app, "Quiz", [create_method_action(app, "Start", self.start), create_method_action(

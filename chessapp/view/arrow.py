@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QPainter, QPainterPath, QColor
 from PyQt5.QtCore import QRect, QPoint, QPointF
-from chessapp.view.pieces import PieceDimenson
+from chessapp.view.pieces import QSize
 from math import sqrt
 
 
@@ -15,7 +15,7 @@ class Arrow:
         self.arrow_head_length_scale: float = 1
         self.arrow_head_scale: float = 1
 
-    def drawOn(self, qp: QPainter, bound: QRect, dim: PieceDimenson):
+    def drawOn(self, qp: QPainter, bound: QRect, dim: QSize):
         head_width = self.width * 2 * max(0, self.arrow_head_scale)
         sx: float = self.source.x() + bound.x() + dim.width / 2
         sy: float = self.source.y() + bound.y() + dim.height / 2

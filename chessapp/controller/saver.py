@@ -1,7 +1,7 @@
 from chessapp.model.chesstree import ChessTree
-from chessapp.view.module import Module, create_method_action
+from chessapp.view.module import LogModule, create_method_action
 
-class Saver(Module):
+class Saver(LogModule):
 
     def __init__(self, app, tree: ChessTree):
         super().__init__(app, "Saver", [create_method_action(app, "Save", self.save)])
