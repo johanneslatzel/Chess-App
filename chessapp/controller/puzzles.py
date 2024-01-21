@@ -166,6 +166,7 @@ class Puzzles(ChessboardAndLogModule):
         """ @see ChessboardAndLogModule.on_register
         this method calls load_puzzles in a threadpool
         """
+        super().on_register()
         self.dispatch_threadpool(self.load_puzzles)
 
     def load_puzzle(self, file_path: str):
