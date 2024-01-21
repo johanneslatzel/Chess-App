@@ -144,7 +144,7 @@ class Puzzles(ChessboardAndLogModule):
     """
 
     def __init__(self, app, explorer: Explorer, tree):
-        """ initializes the puzzles module with the given explorer and tree
+        """ initializes the puzzles module with the given explorer and tree. it has the following actions: explore, retry, and start
 
         Args:
             app (chessapp.chessapp.Chessapp): the main application
