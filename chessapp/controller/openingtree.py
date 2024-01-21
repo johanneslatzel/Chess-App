@@ -15,8 +15,15 @@ s_black_opening_tree_folder_path: str = join(
 
 
 class OpeningTree(LogModule):
+    """the opening tree module is responsible for importing and managing the opening tree that is used in the quiz module
+    """
 
     def __init__(self, app):
+        """initializes the opening tree module and imports the opening tree from the source data folder. the only action is import.
+
+        Args:
+            app (ChessApp): the main application
+        """
         super().__init__(app, "OpeningTree", [
             create_method_action(app, "Import", self.import_opening_tree)])
         self.white_opening_tree: ChessTree = ChessTree(
@@ -27,12 +34,16 @@ class OpeningTree(LogModule):
         self.dispatch_threadpool(self.load)
 
     def load(self):
+        """loads the opening tree from disk (usually once called on startup of the application)
+        """
         self.log_message("loading opening tree...", 60000)
         self.white_opening_tree.load()
         self.black_opening_tree.load()
         self.log_message("loading opening done")
 
     def import_opening_tree(self):
+        """imports the opening tree from the source data folder (this may take a while and should only dispatched on a threadpool)
+        """
         self.log_message("importing white opening tree...")
         self.white_opening_tree.clear()
         import_pgn_from_folder_path(self.app, self.white_opening_tree, SourceType.AMATEUR_GAME,
