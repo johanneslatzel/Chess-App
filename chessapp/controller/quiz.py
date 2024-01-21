@@ -12,6 +12,7 @@ from chessapp.controller.openingtree import OpeningTree
 from chessapp.controller.explorer import Explorer
 from chessapp.model.node import Node
 from chessapp.sound.chessboardsound import ChessboardSound
+from chessapp.util.pgn import moves_to_pgn
 
 s_starting_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
 
@@ -227,23 +228,3 @@ class QuizMovementAction(QRunnable):
         """ applies the movement to the quiz
         """
         self.quiz.apply_movement(self.piece_movement)
-
-
-def moves_to_pgn(moves, white_first_move: bool) -> str:
-    """ this method converts a list of moves to a pgn string
-
-    Args:
-        moves ([str]): array of moves as strings
-        white_first_move (bool): whether the first move is a move of the player with the white pieces
-
-    Returns:
-        str: the pgn string
-    """
-    pgn = ""
-    for i in range(0, len(moves)):
-        if (i % 2 == 0 and white_first_move) or (i % 2 != 0 and not white_first_move):
-            pgn += " " + str(i // 2 + 1) + "."
-        if i == 0 and not white_first_move:
-            pgn += ".."
-        pgn += " " + str(moves[i])
-    return pgn
