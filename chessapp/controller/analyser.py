@@ -3,6 +3,7 @@ from chessapp.controller.engine import Engine
 from chessapp.model.sourcetype import SourceType
 from chess import Board, WHITE
 from chessapp.view.module import ChessboardAndLogModule, create_method_action
+from model.node import Node
 
 
 s_analyse_desired_depth = 20
@@ -23,6 +24,12 @@ s_source_to_depth_map = {
 
 class Analyser(ChessboardAndLogModule):
     def __init__(self, app, tree: ChessTree):
+        """initialises the analyser with the given app and tree. the analyser has two actions: analyse and statistics.
+
+        Args:
+            app (chessapp.Chessapp): the main application
+            tree (ChessTree): the tree to analyse
+        """
         super().__init__(app, "Analyser", [
             create_method_action(app, "Analyse", self.analyse),
             create_method_action(app, "Statistics", self.print_statistics)])
@@ -31,6 +38,10 @@ class Analyser(ChessboardAndLogModule):
         self.engine = Engine()
 
     def print_statistics(self):
+        """prints statistics about the tree to the log, specifically: the number of nodes in the tree;
+        the number of nodes, average depth and number of nodes below preferred depth for each source;
+        the number of nodes with each depth; and the average depth of all nodes
+        """
         self.log_message("gathering data for statistics")
         depth_map = {}
         source_depth_total = {}
@@ -47,7 +58,7 @@ class Analyser(ChessboardAndLogModule):
         self.log_message("number of nodes in tree: " +
                          str(len(self.tree.nodes)))
         for fen in self.tree.nodes:
-            node = self.tree.nodes[fen]
+            node: Node = self.tree.nodes[fen]
             if node.is_mate:
                 continue
             if not node.eval_depth in depth_map:
@@ -71,6 +82,8 @@ class Analyser(ChessboardAndLogModule):
         self.log_message("the average depth is " + str(average_depth))
 
     def analyse(self):
+        """analyses the tree up to the desired depth and time. the engine is given s_analyse_desired_time_seconds seconds to analyse each position.
+        """
         self.log_message("analysing...")
         self.log_message(
             " ".join(("analysing up to", str(s_analyse_max_positions), "positions")))
@@ -89,14 +102,25 @@ class Analyser(ChessboardAndLogModule):
 
         self.log_message("analysing done")
 
-    def analyse_at_depth(self, time_seconds, max_positions):
+    def analyse_at_depth(self, time_seconds: int, max_positions: int) -> int:
+        """ analyses up to max_positions positions at the given depth. only positions with a lower depth than the desired depth are analysed.
+        the depth of the position is updated if the engine finds a higher depth. the engine is given time_seconds seconds to analyse each position.
+        nodes of source ENGINE_SYNTHETIC are ignored.
+
+        Args:
+            time_seconds (int): seconds the engine is given to analyse each position
+            max_positions (int): maximum amount of positions to analyse
+
+        Returns:
+            int: amount of positions analysed
+        """
         position_count = 0
         # pre filter tree to avoid concurrent modification issues (RuntimeError: dictionary changed size during iteration)
         viable_fens = []
         for fen in self.tree.nodes:
             if not (position_count < max_positions and not self.about_to_close()):
                 break
-            node = self.tree.nodes[fen]
+            node: Node = self.tree.nodes[fen]
             source = node.source()
             if not node.is_mate and node.source() != SourceType.ENGINE_SYNTHETIC and ((source in s_source_to_depth_map and node.eval_depth < s_source_to_depth_map[source]) or (node.eval_depth < s_analyse_desired_depth)):
                 viable_fens.append(fen)
@@ -147,4 +171,7 @@ class Analyser(ChessboardAndLogModule):
         return position_count
 
     def on_close(self):
+        """closes the engine
+        """
+        super().on_close()
         self.engine.close()
