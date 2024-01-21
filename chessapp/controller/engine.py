@@ -76,7 +76,7 @@ class Engine:
             depth (int, optional): Defaults to s_analyse_desired_depth. the depth the engine is given to analyse the position.
 
         Returns:
-            tupel: (eval, depth, is_mate) where eval is the evaluation of the board in centipawns/100 or as 100 if mate, depth is the depth of the evaluation and is_mate is whether the board is a mate
+            tuple: (eval, depth, is_mate) where eval is the evaluation of the board in centipawns/100 or as 100 if mate, depth is the depth of the evaluation and is_mate is whether the board is a mate
         """
         result = self.engine.analyse(board, Limit(
             time=time, depth=depth), options={"Threads": s_engine_number_of_threads}, multipv=s_multi_pv)
