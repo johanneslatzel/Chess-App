@@ -3,7 +3,7 @@ from chessapp.controller.engine import Engine
 from chessapp.model.sourcetype import SourceType
 from chess import Board, WHITE
 from chessapp.view.module import ChessboardAndLogModule, create_method_action
-from model.node import Node
+from chessapp.model.node import Node
 
 
 s_analyse_desired_depth = 20
