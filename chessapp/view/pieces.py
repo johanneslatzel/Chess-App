@@ -1,10 +1,11 @@
-from PyQt5.QtGui import QPainter, QPixmap
+from PyQt5.QtGui import QPainter, QPixmap, QFont
 from PyQt5.QtCore import QPoint, QSize
 from os.path import join, exists
 from chessapp.util.paths import get_chess_pieces_folder
 from enum import Enum
 from PyQt5.QtCore import QRect
 from PyQt5.QtCore import Qt
+from chessapp.util.font import find_font_size
 
 
 class PieceColor(Enum):
@@ -43,12 +44,16 @@ class ChessPiece():
         self.pixmap: QPixmap = None
 
     def load_pixmap(self):
+        """tries to load the pixmap of the chess piece from the chess_pieces folder. if the file does not exist, the pixmap is set to None.
+        """
         image_path = join(get_chess_pieces_folder(), str(
             self.piece_color.value) + str(self.piece_type.value) + ".png")
         self.pixmap = QPixmap(image_path) if exists(image_path) else None
 
     def drawOn(self, qp: QPainter, position: QPoint, dimension: QSize):
-        """draws the piece on the given position with the given dimensions. if load_pixmap was not called before, this method cannot draw anything.
+        """draws the piece on the given position with the given dimensions. if load_pixmap was not called before or no image for the piece exists,
+        then the piece is drawn as text (e.g. "q" for queen, "r" for rook, ...) with the color of the piece.
+        of the bounding box of the piece.
 
         Args:
             qp (QPainter): QPainter of the GUI
@@ -60,22 +65,16 @@ class ChessPiece():
                           self.pixmap, 0, 0, self.pixmap.width(), self.pixmap.height())
         else:
             qp.setPen(Qt.GlobalColor.black)
+            text: str = self.piece_type.value.lower()
             if self.piece_color == PieceColor.WHITE:
                 qp.setPen(Qt.GlobalColor.white)
-            qp.drawText(
-                QRect(
-                    position.x(),
-                    position.y(),
-                    dimension.width,
-                    dimension.height
-                ),
-                Qt.AlignCenter,
-                str(
-                    self.piece_type.value.lower()
-                    if self.piece_color == PieceColor.BLACK
-                    else self.piece_type.value.upper()
-                )
-            )
+                text = text.upper()
+            font = QFont()
+            font.setPointSize(find_font_size(
+                QSize(dimension.width, dimension.height), text))
+            qp.setFont(font)
+            qp.drawText(QRect(position.x(), position.y(),
+                        dimension.width, dimension.height), Qt.AlignCenter, text)
 
 
 class Queen(ChessPiece):
