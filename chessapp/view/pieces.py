@@ -1,8 +1,10 @@
 from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtCore import QPoint, QSize
-from os.path import join
+from os.path import join, exists
 from chessapp.util.paths import get_chess_pieces_folder
 from enum import Enum
+from PyQt5.QtCore import QRect
+from PyQt5.QtCore import Qt
 
 
 class PieceColor(Enum):
@@ -41,8 +43,9 @@ class ChessPiece():
         self.pixmap: QPixmap = None
 
     def load_pixmap(self):
-        self.pixmap = QPixmap(join(get_chess_pieces_folder(), str(
-            self.piece_color.value) + str(self.piece_type.value) + ".png"))
+        image_path = join(get_chess_pieces_folder(), str(
+            self.piece_color.value) + str(self.piece_type.value) + ".png")
+        self.pixmap = QPixmap(image_path) if exists(image_path) else None
 
     def drawOn(self, qp: QPainter, position: QPoint, dimension: QSize):
         """draws the piece on the given position with the given dimensions. if load_pixmap was not called before, this method cannot draw anything.
@@ -54,7 +57,25 @@ class ChessPiece():
         """
         if self.pixmap:
             qp.drawPixmap(position.x(), position.y(), dimension.width, dimension.height,
-                          self.pixmap, 0, 0, 300, 300)
+                          self.pixmap, 0, 0, self.pixmap.width(), self.pixmap.height())
+        else:
+            qp.setPen(Qt.GlobalColor.black)
+            if self.piece_color == PieceColor.WHITE:
+                qp.setPen(Qt.GlobalColor.white)
+            qp.drawText(
+                QRect(
+                    position.x(),
+                    position.y(),
+                    dimension.width,
+                    dimension.height
+                ),
+                Qt.AlignCenter,
+                str(
+                    self.piece_type.value.lower()
+                    if self.piece_color == PieceColor.BLACK
+                    else self.piece_type.value.upper()
+                )
+            )
 
 
 class Queen(ChessPiece):

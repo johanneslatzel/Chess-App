@@ -10,3 +10,4 @@ QUIZ_ACCEPT_EVAL_DIFF: float = 0.25
 QUIZ_ACCEPT_EVAL_DIFF_RELAXED: float = 0.35
 QUIZ_ACCEPT_RELAXED_SOURCES = [SourceType.THEORY_VIDEO,
                                SourceType.BOOK, SourceType.GM_GAME]
+PIECES_IMAGES_FOLDER_NAME: str = "default"

@@ -1,6 +1,6 @@
 from pathlib import Path
 from os.path import join
-from chessapp.configuration import ROOT_DIR
+from chessapp.configuration import ROOT_DIR, PIECES_IMAGES_FOLDER_NAME
 
 
 def get_audio_folder() -> Path:
@@ -31,12 +31,13 @@ def get_images_folder() -> Path:
 
 
 def get_chess_pieces_folder() -> Path:
-    """path to the folder that contains all chess pieces
+    """path to the folder that contains all chess pieces using configuration.PIECES_IMAGES_FOLDER_NAME as subfolder in which the
+    image files of the pieces are contained.
 
     Returns:
         Path: path to the folder that contains all chess pieces
     """
-    return join(get_images_folder(), "chessboard", "pieces", "default")
+    return join(get_images_folder(), "chessboard", "pieces", PIECES_IMAGES_FOLDER_NAME)
 
 
 def get_data_folder() -> Path:
