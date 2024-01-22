@@ -69,7 +69,7 @@ class ChessPiece():
             if self.piece_color == PieceColor.WHITE:
                 qp.setPen(Qt.GlobalColor.white)
                 text = text.upper()
-            font = QFont()
+            font = qp.font()
             font.setPointSize(find_font_size(
                 QSize(dimension.width, dimension.height), text))
             qp.setFont(font)
