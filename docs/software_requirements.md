@@ -16,3 +16,4 @@
 - better Comments
 - autoDocstring
 - Rainbow CSV
+- Markdown All in One
