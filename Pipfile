@@ -6,8 +6,8 @@ name = "pypi"
 [packages]
 chess = "*"
 mkdocs = "*"
-mkdocstrings = {extras = ["python"], version = "*"}
 mkdocs-material = "*"
+mkdocstrings = {extras = ["python"], version = "*"}
 
 [dev-packages]
 
