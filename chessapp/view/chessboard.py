@@ -133,11 +133,12 @@ R N B Q K B N R"""
         self.active_piece = get_piece_from(
             self.ascii_board.split("\n")[row].split(" ")[col])
         self.active_piece_legal_move_destinations = []
-        if self.legal_moves != None:
-            for move in self.legal_moves:
-                if str(move).startswith(self.active_piece_origin):
-                    self.active_piece_legal_move_destinations.append(
-                        str(move)[2:])
+        if not self.legal_moves:
+            return
+        for move in self.legal_moves:
+            if str(move).startswith(self.active_piece_origin):
+                self.active_piece_legal_move_destinations.append(
+                    str(move)[2:])
 
     def flip(self):
         self.flip_board = not self.flip_board
@@ -172,9 +173,8 @@ R N B Q K B N R"""
                 square_color = self.black_square_color if row % 2 == col % 2 else self.white_square_color
                 if (not self.flip_board and self.is_active_piece(row, col)) or (self.flip_board and self.is_active_piece(7 - row, 7 - col)):
                     square_color = self.red_square_color
-                if square_color != None:
-                    qp.fillRect(col * dim.width + bound.x(), (7 - row) * dim.height + bound.y(),
-                                dim.width, dim.height, square_color)
+                qp.fillRect(col * dim.width + bound.x(), (7 - row) * dim.height + bound.y(),
+                            dim.width, dim.height, square_color)
 
     def draw_pieces(self, qp: QPainter, bound: QRect, dim: QSize):
         rows = self.ascii_board.split("\n")
@@ -192,51 +192,54 @@ R N B Q K B N R"""
                         dim.width * j_value + bound.x(), dim.height * i_value + bound.y()), dim)
 
     def draw_last_move_arrow(self, qp: QPainter, bound: QRect, dim: QSize):
-        if self.last_move_source and self.last_move_destination:
-            sx, sy = self.square_to_coords(
-                self.last_move_source, bound.width(), bound.height())
-            dx, dy = self.square_to_coords(
-                self.last_move_destination, bound.width(), bound.height())
-            arrow = Arrow(QPoint(sx, sy), QPoint(dx, dy))
-            arrow.width = min(dim.width, dim.height) / 10
-            arrow.arrow_head_scale = 1.1
-            arrow.arrow_head_length_scale = 1.3
-            arrow.color = QColor(252, 186, 3, 192)
-            arrow.indentation = 0.4
-            arrow.drawOn(qp, bound, dim)
+        if not self.last_move_source or not self.last_move_destination:
+            return
+        sx, sy = self.square_to_coords(
+            self.last_move_source, bound.width(), bound.height())
+        dx, dy = self.square_to_coords(
+            self.last_move_destination, bound.width(), bound.height())
+        arrow = Arrow(QPoint(sx, sy), QPoint(dx, dy))
+        arrow.width = min(dim.width, dim.height) / 10
+        arrow.arrow_head_scale = 1.1
+        arrow.arrow_head_length_scale = 1.3
+        arrow.color = QColor(252, 186, 3, 192)
+        arrow.indentation = 0.4
+        arrow.drawOn(qp, bound, dim)
 
     def draw_best_move_arrow(self, qp: QPainter, bound: QRect, dim: QSize):
-        if self.show_best_move and self.best_move and SquareIconType.is_best(self.best_move_cp_loss, True) and self.show_last_move_arrow:
-            sx, sy = self.square_to_coords(
-                self.best_move[:2], bound.width(), bound.height())
-            dx, dy = self.square_to_coords(
-                self.best_move[2:], bound.width(), bound.height())
-            arrow = Arrow(QPoint(sx, sy), QPoint(dx, dy))
-            arrow.width = min(dim.width, dim.height) / 5
-            arrow.drawOn(qp, bound, dim)
+        if not self.show_best_move or not self.best_move or not SquareIconType.is_best(self.best_move_cp_loss, True) or not self.show_last_move_arrow:
+            return
+        sx, sy = self.square_to_coords(
+            self.best_move[:2], bound.width(), bound.height())
+        dx, dy = self.square_to_coords(
+            self.best_move[2:], bound.width(), bound.height())
+        arrow = Arrow(QPoint(sx, sy), QPoint(dx, dy))
+        arrow.width = min(dim.width, dim.height) / 5
+        arrow.drawOn(qp, bound, dim)
 
     def draw_square_icon_last_move(self, qp: QPainter, bound: QRect, dim: QSize):
-        if self.last_move_destination and self.node_depth > 0 and self.show_last_move_icon:
-            x, y = self.square_to_coords(
-                self.last_move_destination, bound.width(), bound.height())
-            self.icon_map[SquareIconType.from_cp_loss(self.last_move_cp_loss, self.last_move_is_book, self.last_move_is_best_known)].drawOn(
-                qp, QPoint(bound.x() + x, bound.y() + y), dim)
+        if not self.last_move_destination or self.node_depth <= 0 or not self.show_last_move_icon:
+            return
+        x, y = self.square_to_coords(
+            self.last_move_destination, bound.width(), bound.height())
+        self.icon_map[SquareIconType.from_cp_loss(self.last_move_cp_loss, self.last_move_is_book, self.last_move_is_best_known)].drawOn(
+            qp, QPoint(bound.x() + x, bound.y() + y), dim)
 
     def draw_piece_movement(self, qp: QPainter, bound: QRect, dim: QSize):
-        if self.should_draw_active_piece():
-            if self.enable_piece_to_cursor:
-                # draw possible destinations
-                for destination in self.active_piece_legal_move_destinations:
-                    x, y = self.square_to_coords(
-                        destination, bound.width(), bound.height())
-                    qp.setPen(QColor(0, 0, 0, 255))
-                    qp.drawEllipse(QPoint(x + bound.x() + dim.width // 2, y + bound.y() + dim.height // 2),
-                                   dim.width // 6, dim.height // 6)
-                    qp.drawEllipse(QPoint(x + bound.x() + dim.width // 2, y + bound.y() + dim.height // 2),
-                                   dim.width // 5, dim.height // 5)
-                # draw piece itself
-                self.active_piece.drawOn(qp, QPoint(
-                    int(self.mouse_x - (dim.width / 2)), int(self.mouse_y - (dim.height / 2))), dim)
+        if not self.should_draw_active_piece() or not self.enable_piece_to_cursor:
+            return
+        # draw possible destinations
+        for destination in self.active_piece_legal_move_destinations:
+            x, y = self.square_to_coords(
+                destination, bound.width(), bound.height())
+            qp.setPen(QColor(0, 0, 0, 255))
+            qp.drawEllipse(QPoint(x + bound.x() + dim.width // 2, y + bound.y() + dim.height // 2),
+                           dim.width // 6, dim.height // 6)
+            qp.drawEllipse(QPoint(x + bound.x() + dim.width // 2, y + bound.y() + dim.height // 2),
+                           dim.width // 5, dim.height // 5)
+        # draw piece itself
+        self.active_piece.drawOn(qp, QPoint(
+            int(self.mouse_x - (dim.width / 2)), int(self.mouse_y - (dim.height / 2))), dim)
 
     def get_preferred_length(self, length: int) -> int:
         return 8 * (length // 8)
