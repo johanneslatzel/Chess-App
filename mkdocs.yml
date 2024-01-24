@@ -1,25 +1,63 @@
 site_name: "Chess App"
 nav:
-  - Home: index.md
-  - Project Setup: project_setup.md
-  - Software Requirements: software_requirements.md
-  - Modules:
-    - chessapp:
-      - ChessApp: chessapp.md
-      - Configuration: configuration.md
-      - Model: chessapp.model.md
-      - View: chessapp.view.md
-      - Controller: chessapp.controller.md
-      - Sound: chessapp.sound.md
-      - Util: chessapp.util.md
+- Overview: index.md
+- chessapp:
+  - Overview: chessapp/index.md
+  - chessapp: chessapp/chessapp.md
+  - configuration: chessapp/configuration.md
+  - controller:
+    - Overview: chessapp/controller/index.md
+    - analyser: chessapp/controller/analyser.md
+    - engine: chessapp/controller/engine.md
+    - explorer: chessapp/controller/explorer.md
+    - gamedownloader: chessapp/controller/gamedownloader.md
+    - openingtree: chessapp/controller/openingtree.md
+    - puzzles: chessapp/controller/puzzles.md
+    - quiz: chessapp/controller/quiz.md
+    - saver: chessapp/controller/saver.md
+    - updater: chessapp/controller/updater.md
+  - model:
+    - Overview: chessapp/model/index.md
+    - chesstree: chessapp/model/chesstree.md
+    - move: chessapp/model/move.md
+    - node: chessapp/model/node.md
+    - sourcetype: chessapp/model/sourcetype.md
+  - sound:
+    - Overview: chessapp/sound/index.md
+    - chessboardsound: chessapp/sound/chessboardsound.md
+  - util:
+    - Overview: chessapp/util/index.md
+    - font: chessapp/util/font.md
+    - paths: chessapp/util/paths.md
+    - pgn: chessapp/util/pgn.md
+  - view:
+    - Overview: chessapp/view/index.md
+    - appwindow: chessapp/view/appwindow.md
+    - arrow: chessapp/view/arrow.md
+    - chessboard: chessapp/view/chessboard.md
+    - chessboardwidget: chessapp/view/chessboardwidget.md
+    - evalbar: chessapp/view/evalbar.md
+    - module: chessapp/view/module.md
+    - pieces: chessapp/view/pieces.md
+- project_setup: project_setup.md
+- software_requirements: software_requirements.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 theme:
   name: material
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.path
+    navigation.tabs
+    navigation.tabs.sticky
+    navigation.path
     - toc.integrate
-    - navigation.top
+    navigation.top
   palette:
     primary: blue
     accent: blue

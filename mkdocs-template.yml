@@ -1,0 +1,28 @@
+site_name: "Chess App"
+((NAV))
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.path
+    - toc.integrate
+    - navigation.top
+    - content.code.copy
+  palette:
+    primary: blue
+    accent: blue
+    toggle:
+      icon: menu
+      name: Menu
+plugins:
+ - search
+ - mkdocstrings
