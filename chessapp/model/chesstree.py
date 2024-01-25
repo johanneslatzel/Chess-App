@@ -79,9 +79,6 @@ class ChessTree:
             file.flush()
             file.close()
 
-    def has(self, fen: str) -> bool:
-        return fen in self.nodes
-
     def find_node(self, max_depth: int = 0, min_source_type=SourceType.ENGINE_SYNTHETIC, allow_terminal_nodes: bool = False, prefer_higher_source_type: bool = False):
         node = None
         node_source = SourceType.ENGINE_SYNTHETIC.value
