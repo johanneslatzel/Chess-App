@@ -133,6 +133,8 @@ class Explorer(ChessboardAndLogModule):
         self.chess_board_widget.flip_board()
 
     def set_board(self, board: Board):
+        if not board:
+            return
         self.reset_board()
         self.board = board.copy()
         self.display()
