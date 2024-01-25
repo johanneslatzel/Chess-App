@@ -1,9 +1,10 @@
+from os.path import isdir, isfile, join
+from os import listdir
 from chessapp.view.module import ChessboardAndLogModule, create_method_action
 from chessapp.controller.explorer import Explorer
 from chessapp.model.chesstree import get_fen_from_board
 from chess import Board
 from chessapp.view.chessboardwidget import PieceMovement
-import os
 import json
 from chessapp.controller.updater import extract_lines
 from chessapp.model.chesstree import reduce_fen, get_fen_from_board
@@ -199,14 +200,12 @@ class Puzzles(ChessboardAndLogModule):
         Args:
             folder (Path|str, optional): Defaults to get_puzzles_folder(). path to the folder containing the puzzles
         """
-        # https://stackoverflow.com/questions/19587118/iterating-through-directories-with-python
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                file_path = str(os.path.join(root, file))
-                if file_path.endswith(".json"):
-                    self.load_puzzle(file_path)
-            for dir in dirs:
-                self.load_puzzles(os.path.join(root, dir))
+        for name in listdir(folder):
+            path: str = join(folder, name)
+            if isdir(path):
+                self.load_puzzles(path)
+            elif isfile(path) and path.endswith(".json"):
+                self.load_puzzle(path)
 
     def finish_puzzle(self):
         """called when a puzzle is done. prepares the puzzles module for a new puzzle
