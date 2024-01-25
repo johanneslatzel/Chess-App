@@ -1,7 +1,7 @@
 import csv
-from .node import Node
-from .sourcetype import SourceType
-from .move import Move
+from chessapp.model.node import Node
+from chessapp.model.sourcetype import SourceType
+from chessapp.model.move import Move
 from chess import Board
 from os.path import exists
 from chessapp.configuration import STR_DEFAULT_ENCODING
