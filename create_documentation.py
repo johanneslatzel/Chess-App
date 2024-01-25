@@ -1,4 +1,4 @@
-from os.path import join, exists, isfile, isdir
+from os.path import join, exists, isfile, isdir, abspath
 from os import walk, listdir
 import os
 from pathlib import Path
@@ -67,7 +67,7 @@ def get_python_files(folder: Path):
         for file in files:
             file_path = str(Path(root, file))
             if file_path.endswith(".py"):
-                yield file_path
+                yield abspath(file_path)
         for dir in dirs:
             yield from get_python_files(Path(root, dir))
 
@@ -91,11 +91,12 @@ def build_nav(folder: Path, base_folder: Path) -> NavNode:
     return root
 
 
-base_folder: Path = Path(Path(__file__).parent)
-docs_folder: Path = join(base_folder, "docs")
-chessapp_folder: Path = join(base_folder, "chessapp")
-mkdocs_yml_file: Path = join(base_folder, "mkdocs.yml")
-mkdocs_template_file: Path = join(base_folder, "mkdocs-template.yml")
+base_folder: Path = Path(abspath(Path(__file__).parent))
+docs_folder: Path = Path(abspath(join(base_folder, "docs")))
+chessapp_folder: Path = Path(abspath(join(base_folder, "chessapp")))
+mkdocs_yml_file: Path = Path(abspath(join(base_folder, "mkdocs.yml")))
+mkdocs_template_file: Path = Path(
+    abspath(join(base_folder, "mkdocs-template.yml")))
 python_class_regex = re.compile(s_python_class_def_regex)
 
 # create a markdown file for each python file
