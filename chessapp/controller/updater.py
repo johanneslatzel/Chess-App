@@ -1,7 +1,6 @@
 from chessapp.model.chesstree import ChessTree, get_fen_from_board
 from chessapp.model.sourcetype import SourceType
 from pathlib import Path
-import os
 from chess import Board, IllegalMoveError
 from chess.pgn import read_game
 import io
