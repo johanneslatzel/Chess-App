@@ -17,8 +17,18 @@ s_best_moves_multipv = 3
 
 
 class Explorer(ChessboardAndLogModule):
+    """ Explore the ChessTree by playing moves on the board. The quality of the moves will be analysed by the engine and icons
+    indicating the quality will be shown on the board. An evalbar is shown to further indicate the position evaluation. This
+    module has several actions to both analyse a positon and show moves for a position that already have been found and analysed.
+    """
 
     def __init__(self, app, tree: ChessTree):
+        """ Create a new Explorer module. 
+
+        Args:
+            app (_type_): _description_
+            tree (ChessTree): _description_
+        """
         super().__init__(app, "Explorer", [
             create_method_action(app, "Analyse d=25", self.analyse_d25),
             create_method_action(app, "Analyse d=30", self.analyse_d30),
@@ -40,8 +50,6 @@ class Explorer(ChessboardAndLogModule):
         self.last_move = None
 
     def on_register(self):
-        self.chess_board_widget.piece_movement_observer.append(
-            self.trigger_movement)
         self.chess_board_widget.back_actions.append(self.back)
         self.reset_board()
         self.chess_board_widget.view_white()
@@ -95,7 +103,7 @@ class Explorer(ChessboardAndLogModule):
         origin_node.update(move_descriptor.eval,
                            move_descriptor.depth, move_descriptor.is_mate)
         move = chessapp.model.move.Move(self.tree, san, fen_result,
-                               source=SourceType.ENGINE_SYNTHETIC)
+                                        source=SourceType.ENGINE_SYNTHETIC)
         origin_node.add(move)
         self.log_message("found move " + san + " with score " + str(move_descriptor.eval) +
                          " and cp loss " + str(origin_node.get_cp_loss(move)) + " at depth " + str(origin_node.eval_depth) + (
@@ -154,7 +162,7 @@ class Explorer(ChessboardAndLogModule):
         else:
             self.log_message("no moves known for this node")
 
-    def trigger_movement(self, piece_movement: PieceMovement):
+    def on_piece_movement(self, piece_movement: PieceMovement):
         if self.about_to_close():
             return
         self.last_move = None
