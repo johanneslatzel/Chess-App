@@ -148,6 +148,8 @@ class ChessboardAndLogModule(LogModule):
         self.chess_board_widget = ChessBoardWidget()
         self.chess_board_widget.piece_movement_observer.append(
             self.on_piece_movement)
+        self.chess_board_widget.back_actions.append(
+            self.on_back)
 
     def init(self):
         super().init()
@@ -162,6 +164,9 @@ class ChessboardAndLogModule(LogModule):
         h_Layout.addWidget(self.log_widget)
 
     def on_piece_movement(self, piece_movement: PieceMovement):
+        pass
+
+    def on_back(self):
         pass
 
     def on_focus(self):

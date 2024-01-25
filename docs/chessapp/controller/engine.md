@@ -14,7 +14,7 @@
 ```python
 from chess import Board
 from chess.engine import Limit, SimpleEngine
-from chessapp.model.chesstree import get_fen_from_board
+from chessapp.model.chesstree import get_reduced_fen_from_board
 from chessapp.util.paths import get_stockfish_exe
 
 s_analyse_desired_time_seconds: int = 30
@@ -78,7 +78,7 @@ class Engine:
             else:
                 eval = pov_score.white().score() / 100.0
             best_moves.append(MoveDescriptor(
-                eval, result[i]["depth"], pov_score.is_mate(), result[i]["pv"], get_fen_from_board(board)))
+                eval, result[i]["depth"], pov_score.is_mate(), result[i]["pv"], get_reduced_fen_from_board(board)))
         return best_moves
 
     def score(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth):

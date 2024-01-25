@@ -17,15 +17,16 @@
 
 # Source
 ```python
+from os.path import isdir, isfile, join
+from os import listdir
 from chessapp.view.module import ChessboardAndLogModule, create_method_action
 from chessapp.controller.explorer import Explorer
-from chessapp.model.chesstree import get_fen_from_board
+from chessapp.model.chesstree import get_reduced_fen_from_board
 from chess import Board
 from chessapp.view.chessboardwidget import PieceMovement
-import os
 import json
 from chessapp.controller.updater import extract_lines
-from chessapp.model.chesstree import reduce_fen, get_fen_from_board
+from chessapp.util.fen import get_reduced_fen_from_board, reduce_fen
 from chessapp.util.paths import get_puzzles_folder
 from random import choice
 import traceback
@@ -131,26 +132,26 @@ class Puzzle:
                 "number of lines found in puzzle file is not 1: " + self.pgn)
         self.board = Board()
         for san in lines[0]:
-            if get_fen_from_board(self.board) == self.fen:
+            if get_reduced_fen_from_board(self.board) == self.fen:
                 break
             self.board.push_san(san)
-        if get_fen_from_board(self.board) != self.fen:
+        if get_reduced_fen_from_board(self.board) != self.fen:
             raise Exception("fen " + self.fen +
                             " never reached from moves in pgn " + self.pgn)
         first_move = self.board.pop()
         first_move_san = self.board.san(first_move)
-        base_node = PuzzleNode(get_fen_from_board(self.board), first_move_san)
+        base_node = PuzzleNode(get_reduced_fen_from_board(self.board), first_move_san)
         self.board.push(first_move)
         self.current_node = base_node
         copy_board = Board(self.board.fen())
         for san in self.moves:
-            next_node = PuzzleNode(get_fen_from_board(copy_board), san)
+            next_node = PuzzleNode(get_reduced_fen_from_board(copy_board), san)
             copy_board.push_san(san)
             self.current_node.next = next_node
             next_node.previous = self.current_node
             self.current_node = next_node
         self.current_node.next = PuzzleNode(
-            get_fen_from_board(copy_board), None)
+            get_reduced_fen_from_board(copy_board), None)
         self.current_node.next.previous = self.current_node
         self.current_node = base_node.next
 
@@ -218,14 +219,12 @@ class Puzzles(ChessboardAndLogModule):
         Args:
             folder (Path|str, optional): Defaults to get_puzzles_folder(). path to the folder containing the puzzles
         """
-        # https://stackoverflow.com/questions/19587118/iterating-through-directories-with-python
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                file_path = str(os.path.join(root, file))
-                if file_path.endswith(".json"):
-                    self.load_puzzle(file_path)
-            for dir in dirs:
-                self.load_puzzles(os.path.join(root, dir))
+        for name in listdir(folder):
+            path: str = join(folder, name)
+            if isdir(path):
+                self.load_puzzles(path)
+            elif isfile(path) and path.endswith(".json"):
+                self.load_puzzle(path)
 
     def finish_puzzle(self):
         """called when a puzzle is done. prepares the puzzles module for a new puzzle
@@ -321,7 +320,7 @@ class Puzzles(ChessboardAndLogModule):
             raise Exception("current_puzzle is None")
         if not self.current_puzzle.current_node:
             raise Exception("current node is None")
-        current_fen = get_fen_from_board(self.current_puzzle.board)
+        current_fen = get_reduced_fen_from_board(self.current_puzzle.board)
         last_move = chessapp.model.move.Move(
             self.tree, self.current_puzzle.current_node.previous.san, current_fen)
         if self.current_puzzle.current_node.previous:

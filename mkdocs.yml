@@ -27,6 +27,7 @@ nav:
     - chessboardsound: chessapp/sound/chessboardsound.md
   - util:
     - Overview: chessapp/util/index.md
+    - fen: chessapp/util/fen.md
     - font: chessapp/util/font.md
     - paths: chessapp/util/paths.md
     - pgn: chessapp/util/pgn.md
