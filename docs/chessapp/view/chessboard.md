@@ -5,6 +5,16 @@
         show_root_heading: true
         show_source: true
 
+::: chessapp.view.chessboard.SquareIcon
+    options:
+        show_root_heading: true
+        show_source: true
+
+::: chessapp.view.chessboard.ChessBoard
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 from chessapp.view.pieces import get_piece_from, ChessPiece

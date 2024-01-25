@@ -1,5 +1,15 @@
 # engine
 
+::: chessapp.controller.engine.MoveDescriptor
+    options:
+        show_root_heading: true
+        show_source: true
+
+::: chessapp.controller.engine.Engine
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 from chess import Board

@@ -1,5 +1,15 @@
 # node
 
+::: chessapp.model.node.Backlink
+    options:
+        show_root_heading: true
+        show_source: true
+
+::: chessapp.model.node.Node
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 from .move import Move

@@ -1,5 +1,10 @@
 # appwindow
 
+::: chessapp.view.appwindow.StatusMessage
+    options:
+        show_root_heading: true
+        show_source: true
+
 ::: chessapp.view.appwindow.AppWindow
     options:
         show_root_heading: true

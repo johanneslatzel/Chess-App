@@ -1,5 +1,10 @@
 # move
 
+::: chessapp.model.move.Move
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 from .sourcetype import SourceType

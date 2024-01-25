@@ -1,5 +1,10 @@
 # arrow
 
+::: chessapp.view.arrow.Arrow
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 from PyQt5.QtGui import QPainter, QPainterPath, QColor

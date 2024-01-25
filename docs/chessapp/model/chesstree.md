@@ -1,5 +1,10 @@
 # chesstree
 
+::: chessapp.model.chesstree.ChessTree
+    options:
+        show_root_heading: true
+        show_source: true
+
 # Source
 ```python
 import csv

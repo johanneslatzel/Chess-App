@@ -12,7 +12,7 @@ s_template: str = """
 """
 s_template_replace = "((MODULE_NAME))"
 s_nav_replace = "((NAV))"
-s_python_class_def_regex = "class\s+([a-zA-Z0-9]+)\s*\((.*)\):"
+s_python_class_def_regex = "class\s+([a-zA-Z0-9()]+)\s*:"
 s_nav_indent: str = "  "
 
 
@@ -115,8 +115,13 @@ for python_file in python_files:
             lines = pf.readlines()
             for line in lines:
                 if python_class_regex.match(line):
+                    class_name: str = line.replace("class", "").strip()
+                    if "(" in class_name:
+                        class_name = class_name.split("(")[0].strip()
+                    else:
+                        class_name = class_name.split(":")[0].strip()
                     fq_class_name: str = sub_path.replace(".py", "").replace(
-                        os.sep, ".") + "." + line.replace("class", "").strip().split("(")[0].strip()
+                        os.sep, ".") + "." + class_name
                     f.write(s_template.replace(
                         s_template_replace, fq_class_name))
         f.write("\n# Source\n")

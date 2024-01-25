@@ -1,5 +1,10 @@
 # chessboardsound
 
+::: chessapp.sound.chessboardsound.SoundAttributes
+    options:
+        show_root_heading: true
+        show_source: true
+
 ::: chessapp.sound.chessboardsound.ChessboardSound
     options:
         show_root_heading: true

@@ -1,5 +1,15 @@
 # puzzles
 
+::: chessapp.controller.puzzles.PuzzleNode
+    options:
+        show_root_heading: true
+        show_source: true
+
+::: chessapp.controller.puzzles.Puzzle
+    options:
+        show_root_heading: true
+        show_source: true
+
 ::: chessapp.controller.puzzles.Puzzles
     options:
         show_root_heading: true
