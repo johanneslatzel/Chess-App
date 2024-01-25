@@ -7,9 +7,10 @@ from chess.pgn import read_game
 import io
 from chessapp.model.move import Move
 from chessapp.view.module import LogModule, create_method_action
-from os.path import join
+from os.path import join, isfile, isdir
 from chessapp.util.paths import get_openings_folder
 from chessapp.model.node import Node
+from os import listdir
 
 
 class Updater(LogModule):
@@ -54,6 +55,7 @@ def import_from_file(app, tree: ChessTree, file_path: str | Path, source: Source
     """
     app.show_status_message(
         "importing pgn from file \"" + file_path + "\"")
+    print("importing pgn from file \"" + file_path + "\"")
     pgn = ""
     with open(file_path, "r", encoding="utf-8") as file:
         pgn = file.read()
@@ -61,7 +63,7 @@ def import_from_file(app, tree: ChessTree, file_path: str | Path, source: Source
 
 
 def import_pgn_from_folder_path(app, tree, source: SourceType, folder_path: str, about_to_close, count_frequency: bool = False):
-    """import all pgn files from a folder into the ChessTree
+    """import all .pgn files from a folder into the ChessTree
 
     Args:
         app (ChessApp): the main application
@@ -71,16 +73,14 @@ def import_pgn_from_folder_path(app, tree, source: SourceType, folder_path: str,
         about_to_close (_type_): callable that returns True if the module closes
         count_frequency (bool, optional): Defaults to False. if True, the frequency of the moves will be counted
     """
-    # https://stackoverflow.com/questions/19587118/iterating-through-directories-with-python
-    for root, dirs, files in os.walk(folder_path):
-        for file in files:
-            file_path = str(os.path.join(root, file))
-            if file_path.endswith(".pgn"):
-                import_from_file(app, tree, file_path,
-                                 source, about_to_close, count_frequency)
-        for dir in dirs:
-            import_pgn_from_folder_path(app, tree, source, os.path.join(
-                root, dir), about_to_close, count_frequency)
+    for name in listdir(folder_path):
+        path: str = join(folder_path, name)
+        if isdir(path):
+            import_pgn_from_folder_path(
+                app, tree, source, path, about_to_close, count_frequency)
+        elif isfile(path) and path.endswith(".pgn"):
+            import_from_file(app, tree, path, source,
+                             about_to_close, count_frequency)
 
 
 def import_pgn(app, tree: ChessTree, pgn: str, source: SourceType, about_to_close, count_frequency: bool = False):
