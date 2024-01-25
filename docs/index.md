@@ -1,1 +1,1 @@
-This is the main documentation of "Chess App".
+This is the main documentation of "Chess App". Refer to "chessapp" for the code documentation.
