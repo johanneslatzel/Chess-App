@@ -141,3 +141,7 @@ template = template.replace(s_nav_replace, nav.get_nav()).replace(
     "nav/", "").replace("- nav", "nav")
 with open(mkdocs_yml_file, "w") as f:
     f.write(template)
+
+
+# build mkdocs
+os.system("pipenv run mkdocs build")

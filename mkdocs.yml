@@ -58,6 +58,7 @@ theme:
     navigation.path
     - toc.integrate
     navigation.top
+    - content.code.copy
   palette:
     primary: blue
     accent: blue
