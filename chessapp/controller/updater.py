@@ -1,4 +1,4 @@
-from chessapp.model.chesstree import ChessTree, get_fen_from_board
+from chessapp.model.chesstree import ChessTree
 from chessapp.model.sourcetype import SourceType
 from pathlib import Path
 from chess import Board, IllegalMoveError
@@ -10,6 +10,7 @@ from os.path import join, isfile, isdir
 from chessapp.util.paths import get_openings_folder
 from chessapp.model.node import Node
 from os import listdir
+from chessapp.util.fen import get_reduced_fen_from_board
 
 
 class Updater(LogModule):
@@ -97,7 +98,7 @@ def import_pgn(app, tree: ChessTree, pgn: str, source: SourceType, about_to_clos
         app.show_status_message("found line: " + str(line))
         board = Board()
         for san in line:
-            fen = get_fen_from_board(board)
+            fen = get_reduced_fen_from_board(board)
             tree.assure(fen)
             try:
                 board.push_san(san)
@@ -105,7 +106,7 @@ def import_pgn(app, tree: ChessTree, pgn: str, source: SourceType, about_to_clos
                 print(
                     "cannot perform board.push_san(san) because an illegal move was performed")
                 return
-            move = Move(tree, san, get_fen_from_board(
+            move = Move(tree, san, get_reduced_fen_from_board(
                 board), source=source)
             equivalent_move = tree.get(fen).get_equivalent_move(move)
             if equivalent_move == None:
@@ -115,7 +116,7 @@ def import_pgn(app, tree: ChessTree, pgn: str, source: SourceType, about_to_clos
                 equivalent_move.source = source
             if count_frequency:
                 equivalent_move.frequency += 1
-        fen = get_fen_from_board(board)
+        fen = get_reduced_fen_from_board(board)
         tree.assure(fen)
 
 

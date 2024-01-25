@@ -1,4 +1,4 @@
-from chessapp.model.chesstree import ChessTree, get_fen_from_board
+from chessapp.model.chesstree import ChessTree
 from chessapp.view.chessboardwidget import PieceMovement
 from chess import Board
 import chess
@@ -9,6 +9,7 @@ import traceback
 from chessapp.model.node import Node
 import chess
 from chessapp.model.sourcetype import SourceType
+from chessapp.util.fen import get_reduced_fen_from_board
 
 s_eval_time_seconds = 60
 s_eval_depth = 20
@@ -66,7 +67,7 @@ class Explorer(ChessboardAndLogModule):
     def find_best_moves(self):
         """ Finds the best moves for the current position and adds them to the tree.
         """
-        base_fen = get_fen_from_board(self.board)
+        base_fen = get_reduced_fen_from_board(self.board)
         base_board = Board(base_fen)
         node: Node = self.tree.get(base_fen)
         self.log_message("finding up to " + str(s_best_moves_multipv) + " best moves for position " +
@@ -116,7 +117,7 @@ class Explorer(ChessboardAndLogModule):
         copy_board = Board(move_descriptor.origin_fen)
         san: str = copy_board.san(move_descriptor.pv[0])
         copy_board.push_san(san)
-        fen_result = get_fen_from_board(copy_board)
+        fen_result = get_reduced_fen_from_board(copy_board)
         node_result = self.tree.get(fen_result)
         if node_result.eval_depth < move_descriptor.depth:
             node_result.update(
@@ -138,7 +139,7 @@ class Explorer(ChessboardAndLogModule):
         Args:
             depth (int, optional): Defaults to s_eval_depth. The depth to analyse the position at.
         """
-        base_fen = get_fen_from_board(self.board)
+        base_fen = get_reduced_fen_from_board(self.board)
         base_board = Board(base_fen)
         node: Node = self.tree.get(base_fen)
         if (node.eval_depth < depth or len(node.moves) == 0) and not node.is_mate:
@@ -176,7 +177,7 @@ class Explorer(ChessboardAndLogModule):
             perform_analysis (bool, optional): Defaults to True. Whether to perform an analysis of the current position.
             play_sound (bool, optional): Defaults to False. Whether to play a sound when displaying the board. 
         """
-        node = self.tree.get(get_fen_from_board(self.board))
+        node = self.tree.get(get_reduced_fen_from_board(self.board))
         self.chess_board_widget.display(
             self.board, node, self.previous_node, self.last_move, play_sound=play_sound)
         if perform_analysis:
@@ -185,13 +186,13 @@ class Explorer(ChessboardAndLogModule):
     def show_fen(self):
         """ Shows the fen of the current board state.
         """
-        self.log_message(get_fen_from_board(self.board))
+        self.log_message(get_reduced_fen_from_board(self.board))
 
     def show_known_moves(self):
         """ Shows the known moves for the current board state.
         """
         self.show_fen()
-        node = self.tree.get(get_fen_from_board(self.board))
+        node = self.tree.get(get_reduced_fen_from_board(self.board))
         if node.has_move():
             for move in node.moves:
                 self.log_message(move.get_info(node))
@@ -209,13 +210,13 @@ class Explorer(ChessboardAndLogModule):
         self.last_move = None
         self.previous_node = None
         try:
-            fen = get_fen_from_board(self.board)
+            fen = get_reduced_fen_from_board(self.board)
             node = self.tree.get(fen)
             san = self.board.san(chess.Move.from_uci(
                 piece_movement.uci_format()))
             board_copy = Board(fen)
             board_copy.push_san(san)
-            result = get_fen_from_board(board_copy)
+            result = get_reduced_fen_from_board(board_copy)
             move = chessapp.model.move.Move(
                 self.tree, san, result, source=SourceType.MANUAL_EXPLORATION)
             if not node.knows_move(move):

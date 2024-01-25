@@ -1,5 +1,5 @@
 from pathlib import Path
-from os.path import join
+from os.path import join, exists
 from chessapp.configuration import ROOT_DIR, PIECES_IMAGES_FOLDER_NAME
 
 
@@ -84,3 +84,14 @@ def get_puzzles_folder() -> Path:
         Path: path to the puzzles folder
     """
     return join(get_data_folder(), "puzzles")
+
+
+def assure_file(file_path: str | Path):
+    """ creates a file if it does not exist
+
+    Args:
+        file_path (str | Path): path to the file
+    """
+    if not exists(file_path):
+        with open(file_path, 'w'):
+            pass

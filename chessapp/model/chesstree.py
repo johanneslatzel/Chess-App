@@ -3,8 +3,9 @@ from chessapp.model.node import Node
 from chessapp.model.sourcetype import SourceType
 from chessapp.model.move import Move
 from chess import Board
-from os.path import exists
+from chessapp.util.paths import assure_file
 from chessapp.configuration import STR_DEFAULT_ENCODING
+from chessapp.util.fen import get_reduced_fen_from_board
 
 
 class ChessTree:
@@ -32,7 +33,7 @@ class ChessTree:
         return self.save_folder_path + "/" + self.moves_file_name
 
     def load_position_evaluation(self, encoding: str):
-        create_file_if_not_exist(self.position_evaluation_file_path())
+        assure_file(self.position_evaluation_file_path())
         with open(self.position_evaluation_file_path(), "r", encoding=encoding) as f:
             # fen; eval; eval_depth; is_mate
             reader = csv.reader(f, delimiter=';')
@@ -41,7 +42,7 @@ class ChessTree:
                     row[1]), int(row[2]), row[3] == "True")
 
     def load_moves(self, encoding: str):
-        create_file_if_not_exist(self.moves_file_path())
+        assure_file(self.moves_file_path())
         with open(self.moves_file_path(), "r", encoding=encoding) as f:
             # fen; move; comment; SourceType; frequency;result fen
             reader = csv.reader(f, delimiter=';')
@@ -52,7 +53,7 @@ class ChessTree:
                     # recover result_fen from san
                     board = Board(fen=row[0])
                     board.push_san(row[1])
-                    result_fen = get_fen_from_board(board)
+                    result_fen = get_reduced_fen_from_board(board)
                 move = Move(self, row[1], result_fen, row[2],
                             SourceType.from_str(row[3]), int(row[4]))
                 self.get(row[0]).add(move)
@@ -93,20 +94,3 @@ class ChessTree:
         return node
 
 
-def reduce_fen(fen: str) -> str:
-    fen_arr = fen.split(" ")
-    del fen_arr[-1]
-    del fen_arr[-1]
-    return " ".join(fen_arr)
-
-
-def get_fen_from_board(board: Board) -> str:
-    return reduce_fen(board.fen())
-
-# https://stackoverflow.com/questions/35807605/create-a-file-if-it-doesnt-exist
-
-
-def create_file_if_not_exist(path):
-    if not exists(path):
-        with open(path, 'w'):
-            pass

@@ -1,7 +1,7 @@
 import random
 from PyQt5.QtCore import QRunnable
 from chess import Board
-from chessapp.model.chesstree import get_fen_from_board, ChessTree
+from chessapp.model.chesstree import ChessTree
 from chessapp.view.chessboardwidget import PieceMovement
 import time
 import chess
@@ -13,6 +13,7 @@ from chessapp.controller.explorer import Explorer
 from chessapp.model.node import Node
 from chessapp.sound.chessboardsound import ChessboardSound
 from chessapp.util.pgn import moves_to_pgn
+from chessapp.util.fen import get_reduced_fen_from_board
 
 s_starting_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
 
@@ -63,7 +64,7 @@ class Quiz(ChessboardAndLogModule):
         if not self.player_turn:
             raise Exception(
                 "this method can only be called during the players turn")
-        fen = get_fen_from_board(self.board)
+        fen = get_reduced_fen_from_board(self.board)
         node = self.tree.get(fen)
         san = self.board.san(chess.Move.from_uci(piece_movement.uci_format()))
         move = node.get_move_by_san(san)
@@ -74,7 +75,7 @@ class Quiz(ChessboardAndLogModule):
             copy_board = Board(fen=fen)
             copy_board.push_san(san)
             self.moves_played.append(san)
-            node.add(Move(self.tree, san, get_fen_from_board(
+            node.add(Move(self.tree, san, get_reduced_fen_from_board(
                 copy_board), source=SourceType.QUIZ_EXPLORATION))
             return
         cp_loss = node.get_cp_loss(move)
@@ -88,7 +89,7 @@ class Quiz(ChessboardAndLogModule):
                 "good move. CP loss = " + str(cp_loss))
         self.board.push_san(san)
         previous_node = node
-        node = self.tree.get(get_fen_from_board(self.board))
+        node = self.tree.get(get_reduced_fen_from_board(self.board))
         self.chess_board_widget.display(
             self.board, last_move=move, previous_node=previous_node, node=node, play_sound=True)
         self.player_turn = False
@@ -107,7 +108,7 @@ class Quiz(ChessboardAndLogModule):
             raise Exception(
                 "this method can only be called during the opponents turn")
         time.sleep(0.7)
-        fen = get_fen_from_board(self.board)
+        fen = get_reduced_fen_from_board(self.board)
         node = self.tree.get(fen)
         if not node.has_move():
             black_node = self.opening_tree.black_opening_tree.get(fen)
@@ -132,7 +133,7 @@ class Quiz(ChessboardAndLogModule):
         self.board.push_san(move.san)
         self.player_turn = True
         previous_node = node
-        node = self.tree.get(get_fen_from_board(self.board))
+        node = self.tree.get(get_reduced_fen_from_board(self.board))
         self.chess_board_widget.display(
             self.board, last_move=move, previous_node=previous_node, node=node, show_last_move_icon=False, last_move_is_opponent_move=True, play_sound=True)
         if not node.has_acceptable_move():
