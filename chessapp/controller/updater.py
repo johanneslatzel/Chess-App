@@ -54,7 +54,6 @@ def import_from_file(app, tree: ChessTree, file_path: str | Path, source: Source
     """
     app.show_status_message(
         "importing pgn from file \"" + file_path + "\"")
-    print("importing pgn from file \"" + file_path + "\"")
     pgn = ""
     with open(file_path, "r", encoding="utf-8") as file:
         pgn = file.read()
