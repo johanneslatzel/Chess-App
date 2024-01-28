@@ -10,6 +10,7 @@ import chessapp.model.move
 from chessapp.model.sourcetype import SourceType
 from chessapp.sound.chessboardsound import ChessboardSound
 import traceback
+from dataclasses import dataclass
 
 s_size_scale = 100
 s_width_hint = 8 * s_size_scale
@@ -18,16 +19,13 @@ s_eval_bar_min_width = 10
 s_min_depth_best_move = 20
 
 
+@dataclass
 class PieceMovement():
-    def __init__(self, source_square: str, destination_square: str):
-        self.source_square = source_square
-        self.destination_square = destination_square
+    source_square: str
+    destination_square: str
 
     def uci_format(self):
         return self.source_square + self.destination_square
-
-    def __str__(self):
-        return self.uci_format()
 
 
 class ChessBoardWidget(QWidget):
