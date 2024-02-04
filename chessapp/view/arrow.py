@@ -5,23 +5,47 @@ from math import sqrt
 
 
 class Arrow:
+    """ An arrow from source to destination point with a given width and color. The arrow can be indented and scaled.
+    
+    Attributes:
+        source (QPoint): source point (root of the arrow)
+        destination (QPoint): destination point (tip of the arrow)
+        width (int): width of the arrow
+        color (QColor): color of the arrow
+        indentation (float): indentation of the arrow (0 = no indentation, 1 = full indentation). TODO: describe indentation
+        arrow_head_length_scale (float): scale of the arrow head length (0 = no arrow head, 1 = full arrow head)
+        arrow_head_width_scale (float): scale of the arrow head width (0 = no arrow head, 1 = full arrow head)
+    """
 
     def __init__(self, source: QPoint, destination: QPoint):
+        """ initialize an arrow
+
+        Args:
+            source (QPoint): source point (root of the arrow)
+            destination (QPoint): destination point (tip of the arrow)
+        """
         self.source = source
         self.destination = destination
         self.width = 10
         self.color = QColor(0, 0, 128, 64)
         self.indentation: float = 0
         self.arrow_head_length_scale: float = 1
-        self.arrow_head_scale: float = 1
+        self.arrow_head_width_scale: float = 1
 
-    def drawOn(self, qp: QPainter, bound: QRect, dim: QSize):
-        head_width = self.width * 2 * max(0, self.arrow_head_scale)
-        sx: float = self.source.x() + bound.x() + dim.width / 2
-        sy: float = self.source.y() + bound.y() + dim.height / 2
+    def drawOn(self, qp: QPainter, bound: QRect, offset: QPointF):
+        """ draw the arrow on the given painter
+
+        Args:
+            qp (QPainter): the painter to draw on
+            bound (QRect): the bounding rectangle of the arrow
+            offset (QSize): the offset of the arrow
+        """
+        head_width = self.width * 2 * max(0, self.arrow_head_width_scale)
+        sx: float = self.source.x() + bound.x() + offset.x()
+        sy: float = self.source.y() + bound.y() + offset.y()
         s = QPointF(sx, sy)
-        dx: float = self.destination.x() + bound.x() + dim.width / 2
-        dy: float = self.destination.y() + bound.y() + dim.height / 2
+        dx: float = self.destination.x() + bound.x() + offset.x()
+        dy: float = self.destination.y() + bound.y() + offset.y()
         d = QPointF(dx, dy)
         vx: float = dx - sx
         vy: float = dy - sy

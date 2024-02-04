@@ -1,5 +1,5 @@
 import chess
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPainter
+from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPainter, QPaintEvent
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QWidget
 from chessapp.view.chessboard import ChessBoard
@@ -21,16 +21,27 @@ s_min_depth_best_move = 20
 
 @dataclass
 class PieceMovement():
+    """ represents a move on a chessboard of a piece from a source square to a destination square
+    """
     source_square: str
     destination_square: str
 
-    def uci_format(self):
+    def uci_format(self) -> str:
+        """ returns the move in UCI format
+
+        Returns:
+            str: the move in UCI format
+        """
         return self.source_square + self.destination_square
 
 
 class ChessBoardWidget(QWidget):
+    """ a widget that displays a chessboard and allows to play moves. It also displays an eval bar if enabled.
+    """
 
     def __init__(self):
+        """ constructor for the ChessBoardWidget class. It initializes the chessboard and the eval bar.
+        """
         super().__init__()
         self.board = ChessBoard()
         self.last_press_x = 0
@@ -40,12 +51,28 @@ class ChessBoardWidget(QWidget):
         self.eval_bar = EvalBar()
 
     def sizeHint(self) -> QSize:
+        """ returns the size hint for the widget that is used to calculate the size of the widget
+
+        Returns:
+            QSize: the size hint for the widget
+        """
         return QSize(s_width_hint, s_height_hint)
 
-    def get_board_length(self):
-        return self.board.get_preferred_length(min(self.width() - self.eval_bar.width, self.height()))
+    def get_board_length(self) -> int:
+        """ the length of the board is the minimum of the width and the height of the widget (the evalbar width is also respected).
+        the length then is used as a width and height of the bounding box of the chessboard.
 
-    def paintEvent(self, event):
+        Returns:
+            int: the length of the board
+        """
+        return 8 * (min(self.width() - self.eval_bar.width, self.height()) // 8)
+
+    def paintEvent(self, event: QPaintEvent):
+        """ paints the widget and is called when the widget needs to be updated
+
+        Args:
+            event (QPaintEvent): the paint event
+        """
         qp = QPainter(self)
         qp.fillRect(0, 0, self.width(), self.height(), Qt.GlobalColor.black)
         # make sure there is enough width for an eval bar
@@ -60,6 +87,19 @@ class ChessBoardWidget(QWidget):
                           self.get_board_length(), self.get_board_length()))
 
     def display(self, board: Board, node: Node = None, previous_node: Node = None, last_move: chessapp.model.move.Move = None, show_last_move_icon: bool = True, last_move_is_opponent_move: bool = False, play_sound: bool = False):
+        """ displays the chessboard in a way that is compatible with the given board.
+
+            TODO: refactor the playing of sound. The sound should not be depend on when the move is displayed but when the move is played.
+
+        Args:
+            board (Board): the board to display
+            node (Node, optional): used to display the eval bar (e.g. evaluation value)
+            previous_node (Node, optional): used to calculate the last move cp loss to display corresponding last move icon (e.g. best move, blunder, etc.)
+            last_move (chessapp.model.move.Move, optional): the last move that was played (used together with previous_node to calculate the last move cp loss)
+            show_last_move_icon (bool, optional): True if the last move icon should be displayed.
+            last_move_is_opponent_move (bool, optional): true if the last move played was the opponent's move.
+            play_sound (bool, optional): true if a sound should be played when the last move is displayed.
+        """
         self.board.ascii_board = str(board)
         self.board.legal_moves = []
         for move in board.legal_moves:
@@ -115,31 +155,66 @@ class ChessBoardWidget(QWidget):
                 ChessboardSound.MOVE_SELF.play()
 
     def flip_board(self):
+        """ flips the board and the eval bar
+        """
         self.board.flip()
         self.eval_bar.flip()
         self.update()
 
     def view_white(self):
+        """ sets the perspective to white
+
+        TODO: is this even needed?
+        """
         self.perspective("w")
 
     def view_black(self):
+        """ sets the perspective to black
+
+        TODO: is this even needed?
+        """
         self.perspective("b")
 
-    def perspective(self, perspective):
+    def perspective(self, perspective: str):
+        """ sets the perspective of the board
+
+        TODO: is this even needed?
+
+        Args:
+            perspective (str): "w" for white, "b" for black
+        """
         self.board.flip_board = perspective != "w"
         self.eval_bar.is_flipped = perspective != "w"
         self.update()
 
-    def is_inside_bounding_box(self, event: QMouseEvent):
+    def is_inside_bounding_box(self, event: QMouseEvent) -> bool:
+        """ checks if the event is inside the bounding box of the chessboard
+
+        Args:
+            event (QMouseEvent): the mouse event
+
+        Returns:
+            bool: true if the event is inside the bounding box of the chessboard
+        """
         return self.eval_bar.width < event.x() and event.x() < self.get_board_length(
         ) + self.eval_bar.width and event.y() < self.get_board_length() and event.y() >= 0
 
     def keyReleaseEvent(self, key_event: QKeyEvent) -> None:
+        """ handles the key release event. If the left arrow key or the backspace key is pressed, the back actions are executed.
+
+        Args:
+            key_event (QKeyEvent): the key event
+        """
         if key_event.key() == Qt.Key.Key_Left or key_event.key() == Qt.Key.Key_Backspace:
             for back_action in self.back_actions:
                 back_action()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """ handles the mouse press event. If the left mouse button is pressed, the piece is selected if it is inside the bounding box of the chessboard.
+
+        Args:
+            event (QMouseEvent): the mouse event
+        """
         self.board.mouse_x = event.x()
         self.board.mouse_y = event.y()
         if self.is_inside_bounding_box(event) and event.button() == Qt.MouseButton.LeftButton:
@@ -149,6 +224,14 @@ class ChessBoardWidget(QWidget):
         self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """ handles the mouse release event. If the left mouse button is released, the piece is moved if it is inside
+        the bounding box of the chessboard and the destination square is not the current square of the piece. If the
+        squares are the same then the peice is "clicked" and selected. This is used to display legal moves of the piece.
+        If the piece is actually moved then the piece movement observers are called.
+
+        Args:
+            event (QMouseEvent): the mouse event
+        """
         self.board.mouse_x = event.x()
         self.board.mouse_y = event.y()
         self.board.enable_piece_to_cursor = False
@@ -166,11 +249,19 @@ class ChessBoardWidget(QWidget):
         self.update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """ handles the mouse move event. the position of the mouse is saved to handle the piece movement before the mouse
+        is released (e.g. drag and drop)
+
+        Args:
+            event (QMouseEvent): the mouse event
+        """
         self.board.mouse_x = event.x()
         self.board.mouse_y = event.y()
         self.update()
 
     def reset(self):
+        """ resets the chessboard to its initial state
+        """
         self.last_press_x = 0
         self.last_press_y = 0
         self.board.last_move_destination = None
