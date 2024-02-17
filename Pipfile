@@ -8,6 +8,8 @@ chess = "*"
 mkdocs = "*"
 mkdocs-material = "*"
 mkdocstrings = {extras = ["python"], version = "*"}
+requests = "*"
+qt-material = "*"
 
 [dev-packages]
 
