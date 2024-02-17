@@ -4,7 +4,7 @@ from chess import Board
 import chess
 import chessapp.model.move
 from chessapp.view.module import ChessboardAndLogModule, create_method_action, MethodAction
-from chessapp.controller.engine import Engine, MoveDescriptor
+from chessapp.controller.engine import LocalStockfishEngine, MoveDescriptor
 import traceback
 from chessapp.model.node import Node
 import chess
@@ -47,7 +47,7 @@ class Explorer(ChessboardAndLogModule):
         self.app = app
         self.tree = tree
         self.board = Board()
-        self.engine = Engine()
+        self.engine = LocalStockfishEngine()
         self.previous_node = None
         self.last_move = None
 

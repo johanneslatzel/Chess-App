@@ -1,5 +1,5 @@
 from chessapp.model.chesstree import ChessTree
-from chessapp.controller.engine import Engine
+from chessapp.controller.engine import LocalStockfishEngine
 from chessapp.model.sourcetype import SourceType
 from chess import Board, WHITE
 from chessapp.view.module import ChessboardAndLogModule, create_method_action
@@ -35,7 +35,7 @@ class Analyser(ChessboardAndLogModule):
             create_method_action(app, "Statistics", self.print_statistics)])
         self.tree: ChessTree = tree
         self.app = app
-        self.engine = Engine()
+        self.engine = LocalStockfishEngine()
 
     def print_statistics(self):
         """prints statistics about the tree to the log, specifically: the number of nodes in the tree;

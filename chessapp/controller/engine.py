@@ -1,3 +1,5 @@
+from urllib import response
+import requests
 from chess import Board
 from chess.engine import Limit, SimpleEngine
 from chessapp.model.chesstree import get_reduced_fen_from_board
@@ -30,7 +32,65 @@ class MoveDescriptor:
         self.origin_fen: str = origin_fen
 
 
-class Engine:
+class Engine():
+
+    def score(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth) -> tuple[float, int, bool]:
+        raise NotImplementedError()
+
+    def find_best_moves(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth, multipv: int = s_multi_pv) -> list[MoveDescriptor]:
+        raise NotImplementedError()
+
+    def close(self):
+        pass
+
+
+class LichessCloudEngine(Engine):
+
+    def __init__(self) -> None:
+        self.base_uri = "https://lichess.org/api/external-engine"
+
+    def query_cloud(self, board: Board, multipv: int = s_multi_pv):
+        params = dict(
+            fen=board.fen(),
+            multiPv=multipv,
+            variant="standard"
+        )
+        return requests.get(self.base_uri, params)
+
+    def get_data_from_response(self, response: response):
+        if not response.ok:
+            raise Exception("lichess cloud engine request failed")
+        return response.json()
+
+    def score(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth):
+        eval: int = 0
+        is_mate: bool = False
+        data = self.get_data_from_response(self.query_cloud(board, multipv=1))
+        if data.pvs[0].mate:
+            eval = 100 * float(data.pvs[0].mate)
+            is_mate = True
+        else:
+            eval = float(data.pvs[0].cp)
+        return eval, int(data.depth), is_mate
+
+    def find_best_moves(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth, multipv: int = s_multi_pv) -> list[MoveDescriptor]:
+        best_moves: list[MoveDescriptor] = []
+        data = self.get_data_from_response(self.query_cloud(board, multipv=1))
+        depth: int = int(data.depth)
+        for pv in data.pvs:
+            eval: int = 0
+            is_mate: bool = False
+            if pv.mate:
+                eval = 100 * float(pv.mate)
+                is_mate = True
+            else:
+                eval = float(pv.cp)
+            best_moves.append(MoveDescriptor(
+                eval, depth, is_mate, pv.moves, board.fen()))
+        return best_moves
+
+
+class LocalStockfishEngine(Engine):
     """a wrapper for the stockfish engine
     """
 
@@ -39,7 +99,7 @@ class Engine:
         """
         self.engine = SimpleEngine.popen_uci(get_stockfish_exe())
 
-    def find_best_moves(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth, multipv: int = s_multi_pv) -> [MoveDescriptor]:
+    def find_best_moves(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth, multipv: int = s_multi_pv) -> list[MoveDescriptor]:
         """finds the best moves for the given board
 
         Args:
@@ -67,7 +127,7 @@ class Engine:
                 eval, result[i]["depth"], pov_score.is_mate(), result[i]["pv"], get_reduced_fen_from_board(board)))
         return best_moves
 
-    def score(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth):
+    def score(self, board: Board, time: int = s_analyse_desired_time_seconds, depth: int = s_analyse_desired_depth) -> tuple[float, int, bool]:
         """scores the given board. @see https://stackoverflow.com/questions/58556338/python-evaluating-a-board-position-using-stockfish-from-the-python-chess-librar
 
         Args:
