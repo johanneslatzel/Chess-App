@@ -4,3 +4,5 @@ pipenv shell
 mkdocs build
 mkdocs serve
 ```
+
+The documentation also contains all attributions.
