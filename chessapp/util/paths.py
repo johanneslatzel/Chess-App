@@ -95,3 +95,12 @@ def assure_file(file_path: str | Path):
     if not exists(file_path):
         with open(file_path, 'w'):
             pass
+
+
+def get_icons_folder() -> Path:
+    """path to the icons folder. icons are used for the GUI.
+
+    Returns:
+        Path: path to the icons folder
+    """
+    return join(get_images_folder(), "icons")
