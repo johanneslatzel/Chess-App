@@ -95,3 +95,12 @@ def assure_file(file_path: str | Path):
     if not exists(file_path):
         with open(file_path, 'w'):
             pass
+
+
+def get_db_folder() -> Path:
+    """path to the database folder. the database folder contains the tinydb database files.
+
+    Returns:
+        Path: path to the database folder
+    """
+    return join(get_data_folder(), "db")
