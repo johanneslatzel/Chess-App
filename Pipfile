@@ -8,6 +8,7 @@ chess = "*"
 mkdocs = "*"
 mkdocs-material = "*"
 mkdocstrings = {extras = ["python"], version = "*"}
+tinydb = "*"
 
 [dev-packages]
 
