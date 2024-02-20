@@ -86,14 +86,27 @@ def get_puzzles_folder() -> Path:
     return join(get_data_folder(), "puzzles")
 
 
+def assure_folder(folder_path: str | Path):
+    """ creates a folder if it does not exist
+
+    Args:
+        folder_path (str | Path): path to the folder
+    """
+    path: Path = Path(folder_path)
+    if not exists(path):
+        path.mkdir(parents=True, exist_ok=True)
+
+
 def assure_file(file_path: str | Path):
-    """ creates a file if it does not exist
+    """ creates a file (and parent folders) if it does not exist
 
     Args:
         file_path (str | Path): path to the file
     """
-    if not exists(file_path):
-        with open(file_path, 'w'):
+    path: Path = Path(file_path)
+    assure_folder(path.parent)
+    if not exists(path):
+        with open(path, 'w'):
             pass
 
 

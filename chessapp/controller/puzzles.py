@@ -15,6 +15,7 @@ import chessapp.model.move
 import chess
 from time import sleep
 from chessapp.sound.chessboardsound import ChessboardSound
+from chessapp.util.paths import assure_folder
 
 
 class PuzzleNode:
@@ -200,6 +201,7 @@ class Puzzles(ChessboardAndLogModule):
         Args:
             folder (Path|str, optional): Defaults to get_puzzles_folder(). path to the folder containing the puzzles
         """
+        assure_folder(folder)
         for name in listdir(folder):
             path: str = join(folder, name)
             if isdir(path):
