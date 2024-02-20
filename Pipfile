@@ -9,6 +9,7 @@ mkdocs = "*"
 mkdocs-material = "*"
 mkdocstrings = {extras = ["python"], version = "*"}
 tinydb = "*"
+requests = "*"
 
 [dev-packages]
 
