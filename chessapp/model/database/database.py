@@ -45,46 +45,44 @@ class GameDocument():
     termination: str = ""
     time_control: str = ""
     variant: str = ""
+    link: str = ""
     black_elo: int = 0
     white_elo: int = 0
-    id = -1
+    id: str = ""
 
     def convert_from_game(game: Game) -> "GameDocument":
         game_document: GameDocument = GameDocument(pgn_mainline_to_moves(game))
-        if game.headers["Site"]:
+        if "Site" in game.headers:
             game_document.site = game.headers["Site"]
-            if game_document.site.startswith("https://lichess.org/"):
-                game_document.id = game_document.site[len(
-                    "https://lichess.org/"):]
-        if game.headers["UTCDate"] and game.headers["UTCTime"]:
+        if "Link" in game.headers:
+            game_document.link = game.headers["Link"]
+        if "UTCDate" in game.headers and "UTCTime" in game.headers:
             game_document.when = game.headers["UTCDate"] + \
                 " " + game.headers["UTCTime"]
-        if game.headers["White"]:
+        if "White" in game.headers:
             game_document.white = game.headers["White"]
-        if game.headers["Black"]:
+        if "Black" in game.headers:
             game_document.black = game.headers["Black"]
-        if game.headers["Result"]:
+        if "Result" in game.headers:
             game_document.result = game.headers["Result"]
-        if game.headers["Termination"]:
+        if "Termination" in game.headers:
             game_document.termination = game.headers["Termination"]
-        if game.headers["TimeControl"]:
+        if "TimeControl" in game.headers:
             game_document.time_control = game.headers["TimeControl"]
-        if game.headers["Variant"]:
+        if "Variant" in game.headers:
             game_document.variant = game.headers["Variant"]
-        if game.headers["BlackElo"] and game.headers["BlackElo"] != "?":
+        if "BlackElo" in game.headers and game.headers["BlackElo"] != "?":
             game_document.black_elo = int(game.headers["BlackElo"])
-        if game.headers["WhiteElo"] and game.headers["WhiteElo"] != "?":
+        if "WhiteElo" in game.headers and game.headers["WhiteElo"] != "?":
             game_document.white_elo = int(game.headers["WhiteElo"])
-        if not game_document.id:
-            raise Exception("game id is not set")
         return game_document
 
 
 class ChessWebsiteDatabase(Database):
-    def __init__(self, username: str, games_uri: str, user_uri: str, user_joined_keyword: str, last_update: datetime = datetime.fromtimestamp(0)):
-        super().__init__("lichess_" + username)
+    def __init__(self, username: str, games_uri: str, user_uri: str, user_joined_keyword: str, db_filename_prefix: str):
+        super().__init__(db_filename_prefix + "_" + username)
         self.username: str = username
-        self.last_update: datetime = last_update
+        self.last_update: datetime = datetime.fromtimestamp(0)
         self.games_uri: str = games_uri
         self.user_uri: str = user_uri
         self.update_interval_days: int = 14
@@ -93,10 +91,16 @@ class ChessWebsiteDatabase(Database):
         self.config_table: Table = None
         self.user_joined_keyword: str = user_joined_keyword
         self.update_time_delta_hours: int = 1
+        self.custom_user_agent: str = None
+        self.created_at_divisor: int = 1
 
     def get_user_data(self) -> dict:
-        response = requests.get(self.user_uri + self.username)
+        headers = dict()
+        if self.custom_user_agent:
+            headers["User-Agent"] = self.custom_user_agent
+        response = requests.get(self.user_uri + self.username, headers=headers)
         if not response.ok:
+            print(response.request.headers)
             raise Exception(
                 "unable to fetch data from lichess.org for reason: " + response.reason)
         return response.json()
@@ -113,7 +117,7 @@ class ChessWebsiteDatabase(Database):
         if not data[self.user_joined_keyword]:
             return
         createdAt: datetime = datetime.fromtimestamp(
-            float(data[self.user_joined_keyword]) / 1000)
+            float(data[self.user_joined_keyword]) / self.created_at_divisor)
         if self.last_update < createdAt:
             self.set_last_update(createdAt)
 
@@ -133,6 +137,9 @@ class ChessWebsiteDatabase(Database):
         games: list[Game] = split_pgn(pgn)
         for game in games:
             game_document = GameDocument.convert_from_game(game)
+            self.set_id_for_game_document(game_document)
+            if not game_document.id:
+                raise Exception("id is not set")
             self.games_table.upsert(
                 game_document.__dict__, Query().id == game_document.id)
 
@@ -142,12 +149,16 @@ class ChessWebsiteDatabase(Database):
     def update_complete(self) -> None:
         raise NotImplementedError()
 
+    def set_id_for_game_document(self, game_document: GameDocument) -> None:
+        raise NotImplementedError()
+
 
 class LichessDatabase(ChessWebsiteDatabase):
 
     def __init__(self, username: str):
         super().__init__(username, "https://lichess.org/api/games/user/",
-                         "https://lichess.org/api/user/", "createdAt")
+                         "https://lichess.org/api/user/", "createdAt", "lichess")
+        self.created_at_divisor = 1000
 
     def update(self) -> int:
         until_datetime: datetime = datetime.now()
@@ -179,16 +190,24 @@ class LichessDatabase(ChessWebsiteDatabase):
                 print("updated games to", str(self.last_update)
                       ), ", new number of games:", len(self.games_table)
 
+    def set_id_for_game_document(self, game_document: GameDocument) -> None:
+        if not game_document.site:
+            raise Exception("site is not set")
+        game_document.id = game_document.site[len("https://lichess.org/"):]
 
-class ChesscomDatabase(ChessWebsiteDatabase):
+
+class ChessDotComDatabase(ChessWebsiteDatabase):
 
     def __init__(self, username: str):
         super().__init__(username, "https://api.chess.com/pub/player/",
-                         "https://api.chess.com/pub/player", "joined")
+                         "https://api.chess.com/pub/player/", "joined", "chess_dot_com")
+        self.custom_user_agent = "chessapp"
 
     def download_month(self, year: int, month: int) -> int:
         response = requests.get(
-            f"{self.games_uri}/{self.username}/games/{year}/{month}/pgn")
+            f"{self.games_uri}{self.username}/games/{year}/{month}/pgn",
+            headers={"User-Agent": self.custom_user_agent}
+        )
         if response.ok:
             self.consume_games(response.text)
         return response.status_code
@@ -221,3 +240,9 @@ class ChesscomDatabase(ChessWebsiteDatabase):
             return_code: int = self.update()
             if return_code != 200:
                 return
+
+    def set_id_for_game_document(self, game_document: GameDocument) -> None:
+        if not game_document.link:
+            raise Exception("link is not set")
+        game_document.id = game_document.link[len(
+            "https://www.chess.com/game/live/"):]
