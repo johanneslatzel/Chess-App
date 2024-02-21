@@ -1,7 +1,6 @@
 from typing import Generator
 from chessapp.model.database.database import Database, LichessDatabase
 from tinydb.table import Table
-from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 
 
