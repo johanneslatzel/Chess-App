@@ -4,7 +4,7 @@ from tinydb.table import Table
 from concurrent.futures import ThreadPoolExecutor
 
 
-s_max_threadpool_workers = 4
+s_max_threadpool_workers: int = 4
 
 
 class DatamasterConfigDatabase(Database):
