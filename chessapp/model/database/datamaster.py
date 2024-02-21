@@ -1,5 +1,5 @@
 from typing import Generator
-from chessapp.model.database.database import Database, LichessDatabase
+from chessapp.model.database.database import Database, ChessWebsiteDatabase, LichessDatabase
 from tinydb.table import Table
 from concurrent.futures import ThreadPoolExecutor
 
@@ -26,7 +26,7 @@ class Datamaster():
 
     def __init__(self):
         self.config_db = DatamasterConfigDatabase()
-        self.game_databases: list[LichessDatabase] = []
+        self.game_databases: list[ChessWebsiteDatabase] = []
         self.threadpool: ThreadPoolExecutor = ThreadPoolExecutor(
             max_workers=s_max_threadpool_workers)
 
