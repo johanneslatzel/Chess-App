@@ -80,6 +80,7 @@ class LichessDatabase(Database):
         self.games_uri: str = "https://lichess.org/api/games/user/"
         self.user_uri: str = "https://lichess.org/api/user/"
         self.update_interval_days: int = 14
+        self.long_update_interval_days: int = 365
         self.games_table: Table = None
         self.config_table: Table = None
 
@@ -104,7 +105,12 @@ class LichessDatabase(Database):
         createdAt: datetime = datetime.fromtimestamp(
             float(data["createdAt"]) / 1000)
         if self.last_update < createdAt:
-            self.last_update = createdAt
+            self.set_last_update(createdAt)
+
+    def set_last_update(self, last_update: datetime) -> None:
+        self.config_table.upsert(
+            {"name": "last_update", "value": self.last_update.isoformat()}, Query().name == "last_update")
+        self.last_update = last_update
 
     def open(self) -> None:
         super().open()
@@ -125,8 +131,11 @@ class LichessDatabase(Database):
         until_datetime: datetime = datetime.now()
         difference = until_datetime - self.last_update
         if difference.days > self.update_interval_days:
+            target_delta_days: int = self.update_interval_days
+            if difference.days > self.long_update_interval_days:
+                target_delta_days = self.long_update_interval_days
             until_datetime = self.last_update + \
-                timedelta(days=self.update_interval_days)
+                timedelta(days=target_delta_days)
         param = dict(
             since=int(datetime.timestamp(self.last_update) * 1000),
             until=int(datetime.timestamp(until_datetime) * 1000)
@@ -135,7 +144,7 @@ class LichessDatabase(Database):
         if response.ok:
             if response.text:
                 self.consume_game(response.text)
-            self.last_update = until_datetime
+            self.set_last_update(until_datetime)
         return response.status_code
 
     def update_complete(self) -> None:
@@ -149,6 +158,4 @@ class LichessDatabase(Database):
                       ), ", new number of games:", len(self.games_table)
 
     def close(self) -> None:
-        self.config_table.upsert(
-            {"name": "last_update", "value": self.last_update.isoformat()}, Query().name == "last_update")
         super().close()
