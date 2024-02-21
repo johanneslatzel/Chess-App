@@ -80,17 +80,19 @@ class GameDocument():
         return game_document
 
 
-class LichessDatabase(Database):
-    def __init__(self, username: str, last_update: datetime = datetime.fromtimestamp(0)):
+class ChessWebsiteDatabase(Database):
+    def __init__(self, username: str, games_uri: str, user_uri: str, user_joined_keyword: str, last_update: datetime = datetime.fromtimestamp(0)):
         super().__init__("lichess_" + username)
-        self.username = username
+        self.username: str = username
         self.last_update: datetime = last_update
-        self.games_uri: str = "https://lichess.org/api/games/user/"
-        self.user_uri: str = "https://lichess.org/api/user/"
+        self.games_uri: str = games_uri
+        self.user_uri: str = user_uri
         self.update_interval_days: int = 14
         self.long_update_interval_days: int = 365
         self.games_table: Table = None
         self.config_table: Table = None
+        self.user_joined_keyword: str = user_joined_keyword
+        self.update_time_delta_hours: int = 1
 
     def get_user_data(self) -> dict:
         response = requests.get(self.user_uri + self.username)
@@ -108,10 +110,10 @@ class LichessDatabase(Database):
 
     def init_last_update_datetime(self) -> None:
         data = self.get_user_data()
-        if not data["createdAt"]:
+        if not data[self.user_joined_keyword]:
             return
         createdAt: datetime = datetime.fromtimestamp(
-            float(data["createdAt"]) / 1000)
+            float(data[self.user_joined_keyword]) / 1000)
         if self.last_update < createdAt:
             self.set_last_update(createdAt)
 
@@ -120,20 +122,32 @@ class LichessDatabase(Database):
             {"name": "last_update", "value": self.last_update.isoformat()}, Query().name == "last_update")
         self.last_update = last_update
 
-    def open(self) -> None:
-        super().open()
+    def on_open(self) -> None:
         self.init_db()
         self.init_last_update_datetime()
 
     def needs_updates(self) -> bool:
-        return self.last_update + timedelta(hours=1) < datetime.now()
+        return self.last_update + timedelta(hours=self.update_time_delta_hours) < datetime.now()
 
-    def consume_game(self, pgn: str) -> None:
+    def consume_games(self, pgn: str) -> None:
         games: list[Game] = split_pgn(pgn)
         for game in games:
             game_document = GameDocument.convert_from_game(game)
             self.games_table.upsert(
                 game_document.__dict__, Query().id == game_document.id)
+
+    def update(self) -> int:
+        raise NotImplementedError()
+
+    def update_complete(self) -> None:
+        raise NotImplementedError()
+
+
+class LichessDatabase(ChessWebsiteDatabase):
+
+    def __init__(self, username: str):
+        super().__init__(username, "https://lichess.org/api/games/user/",
+                         "https://lichess.org/api/user/", "createdAt")
 
     def update(self) -> int:
         until_datetime: datetime = datetime.now()
@@ -151,7 +165,7 @@ class LichessDatabase(Database):
         response = requests.get(self.games_uri + self.username, params=param)
         if response.ok:
             if response.text:
-                self.consume_game(response.text)
+                self.consume_games(response.text)
             self.set_last_update(until_datetime)
         return response.status_code
 
@@ -165,5 +179,45 @@ class LichessDatabase(Database):
                 print("updated games to", str(self.last_update)
                       ), ", new number of games:", len(self.games_table)
 
-    def close(self) -> None:
-        super().close()
+
+class ChesscomDatabase(ChessWebsiteDatabase):
+
+    def __init__(self, username: str):
+        super().__init__(username, "https://api.chess.com/pub/player/",
+                         "https://api.chess.com/pub/player", "joined")
+
+    def download_month(self, year: int, month: int) -> int:
+        response = requests.get(
+            f"{self.games_uri}/{self.username}/games/{year}/{month}/pgn")
+        if response.ok:
+            self.consume_games(response.text)
+        return response.status_code
+
+    def update(self) -> int:
+        until_now: datetime = datetime.now()
+        target_month: int = until_now.month
+        target_year: int = until_now.year
+        skip_to_next_month: bool = False
+        if until_now.year != self.last_update.year and until_now.month != self.last_update.month:
+            target_month = self.last_update.month
+            target_year = self.last_update.year
+            skip_to_next_month = True
+        return_code: int = self.download_month(target_year, target_month)
+        if return_code == 200:
+            if skip_to_next_month:
+                skip_to_year: int = target_year
+                skip_to_month: int = target_month + 1
+                if skip_to_month > 12:
+                    skip_to_month = 1
+                    target_year += 1
+                self.set_last_update(datetime(
+                    year=skip_to_year, month=skip_to_month, day=1))
+            else:
+                self.set_last_update(until_now)
+        return return_code
+
+    def update_complete(self) -> None:
+        while self.needs_updates():
+            return_code: int = self.update()
+            if return_code != 200:
+                return
