@@ -8,6 +8,7 @@ from os.path import join, exists
 from os import makedirs
 from chessapp.util.pgn import split_pgn, pgn_mainline_to_moves
 from chess.pgn import Game
+from time import sleep
 
 
 class Database():
@@ -78,7 +79,7 @@ class LichessDatabase(Database):
         self.last_update: datetime = last_update
         self.games_uri: str = "https://lichess.org/api/games/user/"
         self.user_uri: str = "https://lichess.org/api/user/"
-        self.max_days: int = 60
+        self.update_interval_days: int = 14
         self.games_table: Table = None
         self.config_table: Table = None
 
@@ -117,15 +118,15 @@ class LichessDatabase(Database):
         games: list[Game] = split_pgn(pgn)
         for game in games:
             game_document = GameDocument.convert_from_game(game)
-            print("upserting game with id: " + game_document.id)
             self.games_table.upsert(
                 game_document.__dict__, Query().id == game_document.id)
 
     def update(self) -> int:
         until_datetime: datetime = datetime.now()
         difference = until_datetime - self.last_update
-        if difference.days > self.max_days:
-            until_datetime = self.last_update + timedelta(days=self.max_days)
+        if difference.days > self.update_interval_days:
+            until_datetime = self.last_update + \
+                timedelta(days=self.update_interval_days)
         param = dict(
             since=int(datetime.timestamp(self.last_update) * 1000),
             until=int(datetime.timestamp(until_datetime) * 1000)
@@ -136,6 +137,16 @@ class LichessDatabase(Database):
                 self.consume_game(response.text)
             self.last_update = until_datetime
         return response.status_code
+
+    def update_complete(self) -> None:
+        while self.needs_updates():
+            return_code: int = self.update()
+            if return_code == 429:
+                print("received 429 by lichess, sleeping 60s")
+                sleep(60)
+            else:
+                print("updated games to", str(self.last_update)
+                      ), ", new number of games:", len(self.games_table)
 
     def close(self) -> None:
         self.config_table.upsert(
