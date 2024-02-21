@@ -17,13 +17,21 @@ class Database():
         self.name = name
         self.db = None
 
+    def on_open(self) -> None:
+        pass
+
+    def on_close(self) -> None:
+        pass
+
     def open(self) -> None:
         if not exists(get_db_folder()):
             makedirs(get_db_folder())
         self.db = TinyDB(join(get_db_folder(), f"{self.name}.json"))
+        self.on_open()
 
     def close(self) -> None:
         self.db.close()
+        self.on_close()
 
 
 @dataclass

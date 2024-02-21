@@ -13,7 +13,7 @@ class DatamasterConfigDatabase(Database):
         super().__init__("datamaster_config")
         self.lichess_databases: Table = None
 
-    def init(self) -> None:
+    def on_open(self) -> None:
         self.lichess_databases = self.db.table("lichess_databases")
 
     def all_lichess_databases(self) -> Generator[str, None, None]:
@@ -42,7 +42,6 @@ class Datamaster():
 
     def open(self) -> None:
         self.config_db.open()
-        self.config_db.init()
         for username in self.config_db.all_lichess_databases():
             lichess_db: LichessDatabase = LichessDatabase(username)
             lichess_db.open()
