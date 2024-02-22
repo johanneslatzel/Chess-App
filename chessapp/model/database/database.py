@@ -217,7 +217,7 @@ class ChessDotComDatabase(ChessWebsiteDatabase):
         target_month: int = until_now.month
         target_year: int = until_now.year
         skip_to_next_month: bool = False
-        if until_now.year != self.last_update.year and until_now.month != self.last_update.month:
+        if until_now.year != self.last_update.year or until_now.month != self.last_update.month:
             target_month = self.last_update.month
             target_year = self.last_update.year
             skip_to_next_month = True
