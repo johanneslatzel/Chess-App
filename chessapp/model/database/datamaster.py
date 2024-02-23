@@ -8,6 +8,8 @@ s_max_threadpool_workers: int = 4
 
 
 class DatamasterConfigDatabase(Database):
+    """ saves/loads the configuration of the datamaster
+    """
 
     def __init__(self) -> None:
         super().__init__("datamaster_config")
@@ -59,6 +61,11 @@ class Datamaster():
             lichess_db: LichessDatabase = LichessDatabase(username)
             lichess_db.open()
             self.game_databases.append(lichess_db)
+        for username in self.config_db.all_chess_com_databases():
+            chess_dot_com_db: ChessDotComDatabase = ChessDotComDatabase(
+                username)
+            chess_dot_com_db.open()
+            self.game_databases.append(chess_dot_com_db)
 
     def close(self) -> None:
         self.config_db.close()
