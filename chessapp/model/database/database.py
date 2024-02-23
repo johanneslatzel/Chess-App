@@ -86,7 +86,7 @@ class ChessWebsiteDatabase(Database):
         self.last_update: datetime = datetime.fromtimestamp(0)
         self.games_uri: str = games_uri
         self.user_uri: str = user_uri
-        self.update_interval_days: int = 14
+        self.short_update_interval_days: int = 60
         self.long_update_interval_days: int = 365
         self.games_table: Table = None
         self.config_table: Table = None
@@ -167,8 +167,8 @@ class LichessDatabase(ChessWebsiteDatabase):
     def update(self) -> int:
         until_datetime: datetime = datetime.now()
         difference = until_datetime - self.last_update
-        if difference.days > self.update_interval_days:
-            target_delta_days: int = self.update_interval_days
+        if difference.days > self.short_update_interval_days:
+            target_delta_days: int = self.short_update_interval_days
             if difference.days > self.long_update_interval_days:
                 target_delta_days = self.long_update_interval_days
             until_datetime = self.last_update + \
@@ -229,7 +229,7 @@ class ChessDotComDatabase(ChessWebsiteDatabase):
                 skip_to_month: int = target_month + 1
                 if skip_to_month > 12:
                     skip_to_month = 1
-                    target_year += 1
+                    skip_to_year += 1
                 self.set_last_update(datetime(
                     year=skip_to_year, month=skip_to_month, day=1))
             else:
