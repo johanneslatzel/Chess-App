@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Generator, Mapping
 from tinydb import TinyDB, Query, where
 from tinydb.table import Table
 from chessapp.util.paths import get_db_folder
@@ -94,6 +94,12 @@ class ChessWebsiteDatabase(Database):
         self.update_time_delta_hours: int = 1
         self.custom_user_agent: str = None
         self.created_at_divisor: int = 1
+
+    def search(self, predicate) -> Generator[GameDocument, None, None]:
+        for game in self.games_table.all():
+            game_document = GameDocument(**game)
+            if predicate(game_document):
+                yield game_document
 
     def get_user_data(self) -> dict:
         headers = dict()
