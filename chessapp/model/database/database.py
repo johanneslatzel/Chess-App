@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from tinydb import TinyDB, Query
+from typing import Mapping
+from tinydb import TinyDB, Query, where
 from tinydb.table import Table
 from chessapp.util.paths import get_db_folder
 from datetime import datetime, timedelta
@@ -100,7 +101,6 @@ class ChessWebsiteDatabase(Database):
             headers["User-Agent"] = self.custom_user_agent
         response = requests.get(self.user_uri + self.username, headers=headers)
         if not response.ok:
-            print(response.request.headers)
             raise Exception(
                 "unable to fetch data from lichess.org for reason: " + response.reason)
         return response.json()
@@ -122,9 +122,9 @@ class ChessWebsiteDatabase(Database):
             self.set_last_update(createdAt)
 
     def set_last_update(self, last_update: datetime) -> None:
+        self.last_update = last_update
         self.config_table.upsert(
             {"name": "last_update", "value": self.last_update.isoformat()}, Query().name == "last_update")
-        self.last_update = last_update
 
     def on_open(self) -> None:
         self.init_db()
@@ -135,13 +135,17 @@ class ChessWebsiteDatabase(Database):
 
     def consume_games(self, pgn: str) -> None:
         games: list[Game] = split_pgn(pgn)
+        game_document_mapping: list[Mapping] = []
+        game_document_ids: list[str] = []
         for game in games:
             game_document = GameDocument.convert_from_game(game)
             self.set_id_for_game_document(game_document)
             if not game_document.id:
                 raise Exception("id is not set")
-            self.games_table.upsert(
-                game_document.__dict__, Query().id == game_document.id)
+            game_document_ids.append(game_document.id)
+            game_document_mapping.append(game_document.__dict__)
+        self.games_table.remove(where("id").one_of(game_document_ids))
+        self.games_table.insert_multiple(game_document_mapping)
 
     def update(self) -> int:
         raise NotImplementedError()
@@ -186,9 +190,6 @@ class LichessDatabase(ChessWebsiteDatabase):
             if return_code == 429:
                 print("received 429 by lichess, sleeping 60s")
                 sleep(60)
-            else:
-                print("updated games to", str(self.last_update)
-                      ), ", new number of games:", len(self.games_table)
 
     def set_id_for_game_document(self, game_document: GameDocument) -> None:
         if not game_document.site:

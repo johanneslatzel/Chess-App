@@ -1,3 +1,4 @@
+from chess import Board
 from chess.pgn import read_game
 from io import StringIO
 from chess.pgn import Game, GameNode
@@ -34,10 +35,12 @@ def pgn_mainline_to_moves(game: Game) -> list[str]:
     """
     line: list[str] = []
     node: GameNode = game
+    board: Board = Board()
     while node != None:
         if not (node.variations and len(node.variations) > 0):
             break
-        line.append(node.board().san(node.variations[0].move))
+        line.append(board.san(node.variations[0].move))
+        board.push(node.variations[0].move)
         node = node.variations[0]
     return line
 
