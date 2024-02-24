@@ -190,7 +190,7 @@ class ChessWebsiteDatabase(Database):
         for doc in not_indexed_games:
             game: GameDocument = GameDocument(**doc)
             board.reset()
-            board.set_board_fen(game.starting_position)
+            board.set_board_fen(game.starting_position.split(" ")[0])
             moves_index: int = 0
             for move in game.moves:
                 try:
