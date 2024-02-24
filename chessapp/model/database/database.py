@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Generator, Mapping
+from chess import Board
 from tinydb import TinyDB, Query, where
 from tinydb.table import Table
 from chessapp.util.paths import get_db_folder
@@ -10,6 +11,7 @@ from os import makedirs
 from chessapp.util.pgn import split_pgn, pgn_mainline_to_moves
 from chess.pgn import Game
 from time import sleep
+from chessapp.util.fen import reduce_fen
 
 
 class Database():
@@ -50,6 +52,7 @@ class GameDocument():
     black_elo: int = 0
     white_elo: int = 0
     id: str = ""
+    is_indexed: bool = False
 
     def convert_from_game(game: Game) -> "GameDocument":
         game_document: GameDocument = GameDocument(pgn_mainline_to_moves(game))
@@ -79,6 +82,32 @@ class GameDocument():
         return game_document
 
 
+@dataclass
+class GamePositionReference():
+    game_id: str
+    moves_index: int
+
+
+@dataclass
+class IndexEntry():
+    fen: str
+    reduced_fen: str
+    positon_references: list[GamePositionReference]
+
+    def convert_to_document(self) -> Mapping:
+        map: Mapping = self.__dict__
+        map["positon_references"] = [
+            game_position_reference.__dict__ for game_position_reference in self.positon_references
+        ]
+        return map
+
+    def convert_from_document(map: Mapping) -> "IndexEntry":
+        map["positon_references"] = [GamePositionReference(
+            **game_position_reference) for game_position_reference in map["positon_references"]]
+        index_entry = IndexEntry(**map)
+        return index_entry
+
+
 class ChessWebsiteDatabase(Database):
     def __init__(self, username: str, games_uri: str, user_uri: str, user_joined_keyword: str, db_filename_prefix: str):
         super().__init__(db_filename_prefix + "_" + username)
@@ -90,10 +119,25 @@ class ChessWebsiteDatabase(Database):
         self.long_update_interval_days: int = 365
         self.games_table: Table = None
         self.config_table: Table = None
+        self.index_table: Table = None
         self.user_joined_keyword: str = user_joined_keyword
         self.update_time_delta_hours: int = 1
         self.custom_user_agent: str = None
         self.created_at_divisor: int = 1
+
+    def search_index(self, query: Query) -> list[IndexEntry]:
+        indices: list[IndexEntry] = [IndexEntry.convert_from_document(
+            doc) for doc in self.index_table.search(query)]
+        game_ids: list[str] = [
+            game_position_reference.game_id for index_entry in indices for game_position_reference in index_entry.positon_references]
+        return [
+            GameDocument(**doc) for doc in self.games_table.search(where("id").one_of(game_ids))]
+
+    def search_by_fen(self, fen: str) -> list[GameDocument]:
+        return self.search_index(where("fen") == fen)
+
+    def search_by_reduced_fen(self, fen: str) -> list[GameDocument]:
+        return self.search_index(where("reduced_fen") == reduce_fen(fen))
 
     def search(self, predicate) -> Generator[GameDocument, None, None]:
         for game in self.games_table.all():
@@ -114,9 +158,50 @@ class ChessWebsiteDatabase(Database):
     def init_db(self) -> None:
         self.games_table = self.db.table("games")
         self.config_table = self.db.table("config")
+        self.index_table = self.db.table("index")
         for item in self.config_table:
             if item["name"] == "last_update":
                 self.last_update = datetime.fromisoformat(item["value"])
+
+    def create_games_index(self) -> None:
+        board: Board = Board()
+        known_index_map: dict[str, IndexEntry] = dict()
+        for doc in self.index_table.all():
+            index_entry: IndexEntry = IndexEntry.convert_from_document(doc)
+            known_index_map[index_entry.fen] = index_entry
+        new_indexed_games: list[Mapping] = []
+        not_indexed_games: list[Mapping] = self.games_table.search(
+            where("is_indexed") == False)
+        if len(not_indexed_games) == 0:
+            return
+        index_map: dict[str, IndexEntry] = dict()
+        for doc in not_indexed_games:
+            game: GameDocument = GameDocument(**doc)
+            board.reset()
+            moves_index: int = 0
+            for move in game.moves:
+                board.push_san(move)
+                fen: str = board.fen()
+                reduced_fen: str = reduce_fen(fen)
+                if not fen in index_map:
+                    if not fen in known_index_map:
+                        index_map[fen] = IndexEntry(fen, reduced_fen, [])
+                    else:
+                        index_map[fen] = known_index_map[fen]
+                index_map[fen].positon_references.append(
+                    GamePositionReference(game.id, moves_index))
+                moves_index += 1
+            game.is_indexed = True
+            new_indexed_games.append(game.__dict__)
+        index_entries: list[Mapping] = [
+            index_entry.convert_to_document() for index_entry in index_map.values()]
+        self.index_table.remove(where("fen").one_of(
+            [index_entry["fen"] for index_entry in index_entries]))
+        self.index_table.insert_multiple(
+            index_entries)
+        self.games_table.remove(where("id").one_of(
+            [game["id"] for game in new_indexed_games]))
+        self.games_table.insert_multiple(new_indexed_games)
 
     def init_last_update_datetime(self) -> None:
         data = self.get_user_data()
