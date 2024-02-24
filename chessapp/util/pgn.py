@@ -25,7 +25,9 @@ def moves_to_pgn(moves, white_first_move: bool) -> str:
 
 
 def pgn_mainline_to_moves(game: Game) -> list[str]:
-    """ this method converts the mainline of a game to a list of moves (in SAN notation and ignoring all other variations)
+    """ this method converts the mainline of a game to a list of moves (in SAN notation and ignoring all other variations).
+    The starting position is set to whatever the "FEN" header is defined as or if not set then the 
+    standard starting position is used: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     Args:
         game (Game): the game
