@@ -36,7 +36,7 @@ def pgn_mainline_to_moves(game: Game) -> list[str]:
     line: list[str] = []
     node: GameNode = game
     board: Board = Board(game.headers["FEN"]
-                         ) if game.headers["FEN"] else Board()
+                         ) if "FEN" in game.headers else Board()
     while node != None:
         if not (node.variations and len(node.variations) > 0):
             break
