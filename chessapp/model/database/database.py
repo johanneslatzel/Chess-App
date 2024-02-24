@@ -190,6 +190,8 @@ class ChessWebsiteDatabase(Database):
         for doc in not_indexed_games:
             game: GameDocument = GameDocument(**doc)
             board.reset()
+            # set the board to the starting position using the position part of the fen
+            # otherthise this function will raise an error
             board.set_board_fen(game.starting_position.split(" ")[0])
             moves_index: int = 0
             for move in game.moves:
