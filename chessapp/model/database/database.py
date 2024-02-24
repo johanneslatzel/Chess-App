@@ -53,6 +53,7 @@ class GameDocument():
     white_elo: int = 0
     id: str = ""
     is_indexed: bool = False
+    starting_position: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     def convert_from_game(game: Game) -> "GameDocument":
         game_document: GameDocument = GameDocument(pgn_mainline_to_moves(game))
@@ -61,8 +62,9 @@ class GameDocument():
         if "Link" in game.headers:
             game_document.link = game.headers["Link"]
         if "UTCDate" in game.headers and "UTCTime" in game.headers:
-            game_document.when = game.headers["UTCDate"] + \
-                " " + game.headers["UTCTime"]
+            # iso 8601 datetime format
+            game_document.when = game.headers["UTCDate"].replace(".", "-") + \
+                "T" + game.headers["UTCTime"]
         if "White" in game.headers:
             game_document.white = game.headers["White"]
         if "Black" in game.headers:
@@ -79,6 +81,8 @@ class GameDocument():
             game_document.black_elo = int(game.headers["BlackElo"])
         if "WhiteElo" in game.headers and game.headers["WhiteElo"] != "?":
             game_document.white_elo = int(game.headers["WhiteElo"])
+        if "FEN" in game.headers:
+            game_document.starting_position = game.headers["FEN"]
         return game_document
 
 
@@ -139,6 +143,14 @@ class ChessWebsiteDatabase(Database):
     def search_by_reduced_fen(self, fen: str) -> list[GameDocument]:
         return self.search_index(where("reduced_fen") == reduce_fen(fen))
 
+    def search_by_datetime(self, start: datetime, end: datetime) -> list[GameDocument]:
+        return [
+            GameDocument(**doc) for doc in self.games_table.search(
+                (where("when") >= start.isoformat()
+                 ) & (where("when") < end.isoformat())
+            )
+        ]
+
     def search(self, predicate) -> Generator[GameDocument, None, None]:
         for game in self.games_table.all():
             game_document = GameDocument(**game)
@@ -178,9 +190,14 @@ class ChessWebsiteDatabase(Database):
         for doc in not_indexed_games:
             game: GameDocument = GameDocument(**doc)
             board.reset()
+            board.set_board_fen(game.starting_position)
             moves_index: int = 0
             for move in game.moves:
-                board.push_san(move)
+                try:
+                    board.push_san(move)
+                except:
+                    raise Exception("cannot interpret move " + str(move) +
+                                    " with moves_index " + str(moves_index) + " in game " + game.id)
                 fen: str = board.fen()
                 reduced_fen: str = reduce_fen(fen)
                 if not fen in index_map:
