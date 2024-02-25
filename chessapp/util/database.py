@@ -17,6 +17,9 @@ def update_table(table: Table, documents: list[Mapping], id_field: str = "id"):
     Raises:
         ValueError: if a document does not contain the id_field
     """
+    if len(documents) == 0:
+        return
+
     # Get the IDs of all documents in the index table
     existing_ids = [doc[id_field] for doc in table.all()]
 
