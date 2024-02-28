@@ -1,6 +1,6 @@
 import unittest
 from chessapp.model.database.database import GameDocument
-from chessapp.model.database.gamestats import game_performance, interpret_game_result, game_score
+from chessapp.util.gamestats import game_performance, interpret_game_result, game_score
 
 
 s_games = [

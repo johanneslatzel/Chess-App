@@ -1,10 +1,9 @@
 import unittest
 
 from tinydb import TinyDB
-from chessapp.util.database import update_table
+from chessapp.model.database.database import update_table
 from tinydb import TinyDB
 from tinydb.storages import MemoryStorage
-from chessapp.util.database import update_table
 
 s_initial_docs = [
     {"id": 1, "name": "John"},

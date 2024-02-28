@@ -1,9 +1,21 @@
-from chessapp.model.database.database import GameDocument
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from chessapp.model.database.database import ChessWebsiteDatabase, GameDocument, TimeControl
 
 
 s_low_elo_bound: float = 0
 s_high_elo_bound: float = 4000
 s_elo_accuracy: float = 0.01
+
+
+@dataclass
+class GamePerformance:
+    games_played: int
+    performance: float
+    start_time: datetime
+    end_time: datetime
+    player_name: str
+    db_name: str
 
 
 def expected_score(games: list[GameDocument], player_name: str, proposed_elo: float) -> float:
@@ -105,3 +117,30 @@ def game_performance(games: list[GameDocument], player_name: str) -> float:
         else:
             high = mid
     return high
+
+
+def classify_games_by_timecontrol(games: list[GameDocument]) -> dict[TimeControl, list[GameDocument]]:
+    """ classifies the games by time control
+
+    Args:
+        games (list[GameDocument]): games to classify
+    Returns:
+        dict[TimeControl, list[GameDocument]]: maps time controls to games
+    """
+    classified_games: dict[TimeControl, list[GameDocument]] = {}
+    for time_control in TimeControl:
+        classified_games[time_control] = [
+            game for game in games if game.get_timecontrol() == time_control
+        ]
+    return classified_games
+
+
+def get_performance_on_day(db: ChessWebsiteDatabase, player_name: str, day: datetime, time_control: TimeControl) -> GamePerformance:
+    start_time: datetime = day
+    start_time: datetime = start_time + timedelta(hours=-start_time.hour, minutes=-start_time.minute,
+                                                  seconds=-start_time.second, microseconds=-start_time.microsecond)
+    end_time: datetime = start_time + timedelta(days=1)
+    games: list[GameDocument] = [
+        game for game in db.search_by_datetime(start_time, end_time) if game.get_timecontrol() == time_control
+    ]
+    return GamePerformance(len(games), game_performance(games, player_name), start_time, end_time, player_name, db.name)

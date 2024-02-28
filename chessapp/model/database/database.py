@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Generator, Mapping
 from chess import Board
 from tinydb import TinyDB, Query, where
@@ -37,6 +38,26 @@ class Database():
         self.on_close()
 
 
+class TimeControl(Enum):
+    BULLET = "bullet"
+    BLITZ = "blitz"
+    RAPID = "rapid"
+    CLASSICAL = "classical"
+    CORRESPONDENCE = "correspondence"
+
+    def from_time_string(time_control: str) -> "TimeControl":
+        seconds: int = int(time_control.split("+")[0])
+        if seconds < 180:
+            return TimeControl.BULLET
+        if seconds < 600:
+            return TimeControl.BLITZ
+        if seconds < 1800:
+            return TimeControl.RAPID
+        if seconds < 10800:
+            return TimeControl.CLASSICAL
+        return TimeControl.CORRESPONDENCE
+
+
 @dataclass
 class GameDocument():
     moves: list[str]
@@ -52,8 +73,10 @@ class GameDocument():
     black_elo: int = 0
     white_elo: int = 0
     id: str = ""
-    is_indexed: bool = False
     starting_position: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+    def get_timecontrol(self) -> TimeControl:
+        return TimeControl.from_time_string(self.time_control)
 
     def convert_from_game(game: Game) -> "GameDocument":
         game_document: GameDocument = GameDocument(pgn_mainline_to_moves(game))
@@ -87,29 +110,11 @@ class GameDocument():
 
 
 @dataclass
-class GamePositionReference():
-    game_id: str
-    moves_index: int
-
-
-@dataclass
 class IndexEntry():
     fen: str
     reduced_fen: str
-    positon_references: list[GamePositionReference]
-
-    def convert_to_document(self) -> Mapping:
-        map: Mapping = self.__dict__
-        map["positon_references"] = [
-            game_position_reference.__dict__ for game_position_reference in self.positon_references
-        ]
-        return map
-
-    def convert_from_document(map: Mapping) -> "IndexEntry":
-        map["positon_references"] = [GamePositionReference(
-            **game_position_reference) for game_position_reference in map["positon_references"]]
-        index_entry = IndexEntry(**map)
-        return index_entry
+    game_id: str
+    moves_index: int
 
 
 class ChessWebsiteDatabase(Database):
@@ -130,10 +135,10 @@ class ChessWebsiteDatabase(Database):
         self.created_at_divisor: int = 1
 
     def search_index(self, query: Query) -> list[IndexEntry]:
-        indices: list[IndexEntry] = [IndexEntry.convert_from_document(
-            doc) for doc in self.index_table.search(query)]
+        indices: list[IndexEntry] = [IndexEntry(
+            **doc) for doc in self.index_table.search(query)]
         game_ids: list[str] = [
-            game_position_reference.game_id for index_entry in indices for game_position_reference in index_entry.positon_references]
+            index_entry.game_id for index_entry in indices]
         return [
             GameDocument(**doc) for doc in self.games_table.search(where("id").one_of(game_ids))]
 
@@ -175,19 +180,10 @@ class ChessWebsiteDatabase(Database):
             if item["name"] == "last_update":
                 self.last_update = datetime.fromisoformat(item["value"])
 
-    def create_games_index(self) -> None:
+    def index_documents(self, game_docs: list[Mapping]) -> None:
         board: Board = Board()
-        known_index_map: dict[str, IndexEntry] = dict()
-        for doc in self.index_table.all():
-            index_entry: IndexEntry = IndexEntry.convert_from_document(doc)
-            known_index_map[index_entry.fen] = index_entry
-        new_indexed_games: list[Mapping] = []
-        not_indexed_games: list[Mapping] = self.games_table.search(
-            where("is_indexed") == False)
-        if len(not_indexed_games) == 0:
-            return
-        index_map: dict[str, IndexEntry] = dict()
-        for doc in not_indexed_games:
+        new_index_entry_docs: list[Mapping] = []
+        for doc in game_docs:
             game: GameDocument = GameDocument(**doc)
             board.reset()
             # set the board to the starting position using the position part of the fen
@@ -202,25 +198,10 @@ class ChessWebsiteDatabase(Database):
                                     " with moves_index " + str(moves_index) + " in game " + game.id)
                 fen: str = board.fen()
                 reduced_fen: str = reduce_fen(fen)
-                if not fen in index_map:
-                    if not fen in known_index_map:
-                        index_map[fen] = IndexEntry(fen, reduced_fen, [])
-                    else:
-                        index_map[fen] = known_index_map[fen]
-                index_map[fen].positon_references.append(
-                    GamePositionReference(game.id, moves_index))
+                new_index_entry_docs.append(IndexEntry(
+                    fen, reduced_fen, game.id, moves_index).__dict__)
                 moves_index += 1
-            game.is_indexed = True
-            new_indexed_games.append(game.__dict__)
-        index_entries: list[Mapping] = [
-            index_entry.convert_to_document() for index_entry in index_map.values()]
-        self.index_table.remove(where("fen").one_of(
-            [index_entry["fen"] for index_entry in index_entries]))
-        self.index_table.insert_multiple(
-            index_entries)
-        self.games_table.remove(where("id").one_of(
-            [game["id"] for game in new_indexed_games]))
-        self.games_table.insert_multiple(new_indexed_games)
+        self.index_table.insert_multiple(new_index_entry_docs)
 
     def init_last_update_datetime(self) -> None:
         data = self.get_user_data()
@@ -245,17 +226,25 @@ class ChessWebsiteDatabase(Database):
 
     def consume_games(self, pgn: str) -> None:
         games: list[Game] = split_pgn(pgn)
-        game_document_mapping: list[Mapping] = []
+        game_docs: list[Mapping] = []
         game_document_ids: list[str] = []
-        for game in games:
-            game_document = GameDocument.convert_from_game(game)
+        for doc in games:
+            game_document = GameDocument.convert_from_game(doc)
             self.set_id_for_game_document(game_document)
             if not game_document.id:
                 raise Exception("id is not set")
             game_document_ids.append(game_document.id)
-            game_document_mapping.append(game_document.__dict__)
-        self.games_table.remove(where("id").one_of(game_document_ids))
-        self.games_table.insert_multiple(game_document_mapping)
+            game_docs.append(game_document.__dict__)
+        # insert all documents from game_document_mapping that are not already in the database
+        docs = [
+            doc for doc in game_docs if not doc["id"] in [
+                doc["id"] for doc in self.games_table.search(
+                    where("id").one_of(game_document_ids)
+                )
+            ]
+        ]
+        self.index_documents(docs)
+        self.games_table.insert_multiple(docs)
 
     def update(self) -> int:
         raise NotImplementedError()
@@ -281,8 +270,8 @@ class LichessDatabase(ChessWebsiteDatabase):
             target_delta_days: int = self.short_update_interval_days
             if difference.days > self.long_update_interval_days:
                 target_delta_days = self.long_update_interval_days
-            until_datetime = self.last_update + \
-                timedelta(days=target_delta_days)
+            delta: timedelta = timedelta(days=target_delta_days)
+            until_datetime = self.last_update + delta
         param = dict(
             since=int(datetime.timestamp(self.last_update) * 1000),
             until=int(datetime.timestamp(until_datetime) * 1000)
@@ -357,3 +346,38 @@ class ChessDotComDatabase(ChessWebsiteDatabase):
             raise Exception("link is not set")
         game_document.id = game_document.link[len(
             "https://www.chess.com/game/live/"):]
+
+
+def update_table(table: Table, documents: list[Mapping], id_field: str = "id"):
+    """ This method updates the table such that. The id_field is used to identify the
+    documents. If a document with the same id_field value exists in the table, it is updated, otherwise it is inserted.
+    All documents have to contain the id_field. Otherwise the documents cannot be identified.
+
+
+    Args:
+        table (Table): target table
+        documents (list[Mapping]): documents to update or insert
+        id_field (str, optional): id_field used to identify identical documents
+
+    Raises:
+        ValueError: if a document does not contain the id_field
+    """
+    if len(documents) == 0:
+        return
+
+    # Get the IDs of all documents in the index table
+    existing_ids = [doc[id_field] for doc in table.all()]
+
+    # Split documents into existing and new entries
+    existing_entries = [
+        doc for doc in documents if doc[id_field] in existing_ids]
+    new_entries = [
+        doc for doc in documents if doc[id_field] not in existing_ids]
+
+    # Update existing entries and insert new entries
+    for doc in existing_entries:
+        if not id_field in doc:
+            raise ValueError("id_field " + id_field +
+                             " not found in document " + str(doc))
+        table.update(doc, cond=where(id_field) == doc[id_field])
+    table.insert_multiple(new_entries)
