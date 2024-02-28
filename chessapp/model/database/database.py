@@ -348,6 +348,42 @@ class ChessDotComDatabase(ChessWebsiteDatabase):
             "https://www.chess.com/game/live/"):]
 
 
+@dataclass
+class Evaluation():
+    fen: str
+    evaluation: float
+    depth: int
+
+
+class EvaluationDatabase(Database):
+
+    def __init__(self):
+        super().__init__("evaluation")
+        self.evaluations_table: Table = None
+        self.eval_map: dict[str, Evaluation] = dict()
+
+    def get_evaluation(self, fen: str) -> float | None:
+        if not fen in self.eval_map:
+            return None
+        return self.eval_map[fen]
+
+    def _set_evaluation(self, evaluation: Evaluation) -> None:
+        self.eval_map[evaluation.fen] = evaluation
+        self.evaluations_table.upsert(
+            evaluation.__dict__, where("fen") == evaluation.fen)
+
+    def suggest_evaluation(self, evaluation: Evaluation) -> None:
+        if evaluation.fen in self.eval_map and evaluation.depth <= self.eval_map[evaluation.fen].depth:
+            return
+        self._set_evaluation(evaluation)
+
+    def on_open(self) -> None:
+        self.evaluations_table = self.db.table("evaluations")
+        for doc in self.evaluations_table.all():
+            eval: Evaluation = Evaluation(**doc)
+            self.eval_map[eval.fen] = eval
+
+
 def update_table(table: Table, documents: list[Mapping], id_field: str = "id"):
     """ This method updates the table such that. The id_field is used to identify the
     documents. If a document with the same id_field value exists in the table, it is updated, otherwise it is inserted.

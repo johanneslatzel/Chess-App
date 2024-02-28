@@ -1,5 +1,5 @@
 from typing import Generator
-from chessapp.model.database.database import Database, ChessWebsiteDatabase, LichessDatabase, ChessDotComDatabase
+from chessapp.model.database.database import Database, ChessWebsiteDatabase, EvaluationDatabase, LichessDatabase, ChessDotComDatabase
 from tinydb.table import Table
 from concurrent.futures import ThreadPoolExecutor
 
@@ -38,6 +38,7 @@ class Datamaster():
         self.game_databases: list[ChessWebsiteDatabase] = []
         self.threadpool: ThreadPoolExecutor = ThreadPoolExecutor(
             max_workers=s_max_threadpool_workers)
+        self.evaluation_database = EvaluationDatabase()
 
     def add_lichess_database(self, username: str) -> None:
         self.config_db.lichess_databases.insert({"username": username})
@@ -66,6 +67,7 @@ class Datamaster():
                 username)
             chess_dot_com_db.open()
             self.game_databases.append(chess_dot_com_db)
+        self.evaluation_database.open()
 
     def close(self) -> None:
         self.config_db.close()
