@@ -1,5 +1,13 @@
 import asyncio
-from chessapp.model.database.database import GameDocument
+from dataclasses import dataclass
+from chessapp.model.database.database import Evaluation, GameDocument
+
+
+@dataclass
+class GameAnalysis:
+    game: GameDocument
+    evaluations: list[Evaluation]
+
 
 class AnalysisService():
 
