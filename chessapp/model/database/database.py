@@ -353,6 +353,7 @@ class Evaluation():
     fen: str
     evaluation: float
     depth: int
+    is_mate: bool
 
 
 class EvaluationDatabase(Database):
